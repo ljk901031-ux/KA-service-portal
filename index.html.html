@@ -1,0 +1,4218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Agilent KA Team Portal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+    /* GLOBAL RESET */
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin:0; padding:0; font-family:'Roboto','Segoe UI',Arial,sans-serif; background:#f4f7f9; height:100vh; overflow:hidden; }
+
+    /* PORTAL */
+    #portal-frame { display:flex; flex-direction:column; height:100vh; }
+    #portal-nav { background:#1f4e79; color:white; padding:0 20px; display:flex; justify-content:space-between; align-items:center; height:55px; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,0.2); z-index:9999; }
+    #portal-nav .nav-title { font-weight:700; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; gap:8px; }
+    #portal-nav .nav-title:hover { opacity:0.85; }
+    #portal-breadcrumb { font-size:0.82rem; color:rgba(255,255,255,0.7); }
+    #portal-body { flex:1; overflow:hidden; position:relative; }
+
+    /* HOME */
+    #page-home { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:30px 20px; overflow-y:auto; background:linear-gradient(135deg,#1f4e79 0%,#2d6fa5 50%,#4a90d9 100%); }
+    .home-logo { color:white; text-align:center; margin-bottom:40px; }
+    .home-logo h1 { font-size:2rem; font-weight:700; letter-spacing:1px; margin-bottom:6px; color:white!important; border:none!important; padding:0!important; }
+    .home-logo p { font-size:0.9rem; color:rgba(255,255,255,0.75); margin:0; }
+    .home-cards { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; width:100%; max-width:640px; }
+    .home-card { background:white; border-radius:14px; padding:28px 20px; display:flex; flex-direction:column; align-items:center; gap:10px; cursor:pointer; box-shadow:0 6px 20px rgba(0,0,0,0.15); border:2px solid transparent; transition:all 0.22s ease; }
+    .home-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(0,0,0,0.22); border-color:#1f4e79; }
+    .home-card:active { transform:scale(0.97); }
+    .home-card .card-num { width:34px; height:34px; background:#1f4e79; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.95rem; }
+    .home-card .card-icon { font-size:2.2rem; line-height:1; }
+    .home-card .card-title { font-size:1rem; font-weight:700; color:#1f4e79; text-align:center; line-height:1.4; }
+    .home-card .card-desc { font-size:0.78rem; color:#888; text-align:center; }
+
+    /* SUB-PAGES */
+    .sub-page { display:none; position:absolute; top:0; left:0; right:0; bottom:0; overflow:hidden; }
+    .sub-page.active { display:block; }
+
+    /* PAGE 1: CONTROL PANEL */
+    #p1-scroll { width:100%; height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; background:#fff; }
+    .cp-wrap { max-width:100%; margin:0 auto; padding:16px 20px; font-family:'Roboto',Arial,sans-serif; color:#333; background:#fff; line-height:1.4; }
+    .cp-wrap h1 { color:#003366; font-size:18pt; border-bottom:2px solid #003366; padding-bottom:8px; margin-bottom:16px; line-height:1.3; }
+    .cp-wrap h2 { color:#003366; font-size:16pt; margin-top:24px; margin-bottom:12px; background-color:#f0f4f8; padding:6px 10px; border-left:4px solid #003366; }
+    .cp-wrap h3 { color:#444; font-size:13pt; margin-top:20px; margin-bottom:8px; font-weight:600; }
+    .cp-wrap p { margin-bottom:10px; text-align:justify; font-size:10pt; }
+    .cp-wrap .intro-box { border:1px solid #ddd; background-color:#fafafa; padding:12px; margin-bottom:20px; border-radius:4px; }
+    .cp-wrap .table-container { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:16px; border:1px solid #ccc; }
+    .cp-wrap table { width:100%; min-width:600px; border-collapse:collapse; font-size:9.5pt; margin-bottom:0; }
+    .cp-wrap th { background-color:#003366!important; color:white!important; padding:8px; text-align:left; font-weight:600; border:1px solid #002244; font-size:9.5pt; }
+    .cp-wrap td { padding:8px; border:1px solid #ccc; vertical-align:top; }
+    .cp-wrap tr:nth-child(even) { background-color:#f8f9fa; }
+    .cp-wrap .col-name { width:30%; min-width:120px; font-weight:600; }
+    .cp-wrap .desc-en { margin-bottom:4px; display:block; }
+    .cp-wrap .desc-ko { color:#555; display:block; margin-bottom:4px; font-size:0.95em; }
+    .cp-wrap .note { color:#d32f2f; font-size:0.9em; display:block; margin-top:4px; font-style:italic; }
+
+    /* PAGE 2: AGILENT SERVICE PORTAL */
+    #p2-scroll { width:100%; height:100%; overflow:hidden; display:flex; flex-direction:column; background:#f4f7f9; }
+    #p2-dashboard { display:grid; grid-template-columns:repeat(2,1fr); gap:15px; padding:20px; flex:1; align-content:start; overflow-y:auto; }
+    #p2-dashboard .menu-card { background:white; height:140px; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.05); cursor:pointer; border:1px solid #e0e0e0; transition:0.2s; }
+    #p2-dashboard .menu-card:active { transform:scale(0.97); background:#f0f0f0; }
+    #p2-dashboard .menu-card h2 { margin:0!important; font-size:1.2rem!important; color:#1f4e79!important; background:none!important; border:none!important; padding:0!important; }
+    #p2-dashboard .menu-card p { margin-top:5px; font-size:0.8rem; color:#666; margin-bottom:0; }
+    .p2page { display:none; height:100%; width:100%; background:white; overflow-y:auto; padding:16px 20px; box-sizing:border-box; position:absolute; top:0; left:0; }
+    /* p2 sub-page cp-content styles */
+    .p2page .cp-content h1 { color:#003366; font-size:15pt; border-bottom:2px solid #003366; padding-bottom:8px; margin-bottom:16px; }
+    .p2page .cp-content h2 { color:#003366!important; font-size:14pt!important; margin-top:24px!important; margin-bottom:12px!important; background-color:#f0f4f8!important; padding:6px 10px!important; border-left:4px solid #003366!important; }
+    .p2page .cp-content h3 { color:#444; font-size:12pt; margin-top:20px; margin-bottom:8px; font-weight:600; }
+    .p2page .cp-content .intro-box { border:1px solid #ddd; background-color:#fafafa; padding:12px; margin-bottom:20px; border-radius:4px; }
+    .p2page .cp-content .table-container { width:100%; overflow-x:auto; margin-bottom:16px; border:1px solid #ccc; }
+    .p2page .cp-content table { width:100%; min-width:600px; border-collapse:collapse; font-size:9.5pt; }
+    .p2page .cp-content th { background-color:#003366!important; color:white!important; padding:8px; text-align:left; font-weight:600; border:1px solid #002244; }
+    .p2page .cp-content td { padding:8px; border:1px solid #ccc; vertical-align:top; }
+    .p2page .cp-content tr:nth-child(even) { background-color:#f8f9fa; }
+    .p2page .cp-content .desc-en { display:block; margin-bottom:4px; }
+    .p2page .cp-content .desc-ko { color:#555; display:block; margin-bottom:4px; font-size:0.95em; }
+    .p2page .cp-content .note { color:#d32f2f; font-size:0.9em; display:block; margin-top:4px; font-style:italic; }
+    .p2page .cp-content .col-name { width:30%; font-weight:600; }
+
+    /* PAGE 3: SERVICES PART LIST */
+    #p3-outer { display:flex; height:100%; overflow:hidden; background:#f4f7f9; font-family:'Segoe UI',Arial,sans-serif; }
+    #p3-outer * { box-sizing:border-box; }
+    #p3-outer .sidebar { width:260px; background-color:white; border-right:1px solid #ddd; display:flex; flex-direction:column; flex-shrink:0; }
+    #p3-outer .sidebar-header { padding:20px; background-color:#1f4e79; color:white; font-weight:bold; font-size:1.1em; text-align:center; display:flex; align-items:center; justify-content:center; gap:8px; }
+    #p3-outer .upload-section { padding:15px; background:#f8f9fa; border-bottom:1px solid #eee; display:flex; flex-direction:column; gap:10px; }
+    #p3-outer .upload-row { display:flex; align-items:center; gap:6px; position:relative; }
+    #p3-outer .upload-label { flex:1; display:flex; justify-content:space-between; align-items:center; padding:10px; background:#fff; border-radius:6px; cursor:pointer; font-size:0.85em; border:1px dashed #1f4e79; color:#1f4e79; font-weight:bold; transition:0.2s; margin-bottom:0; }
+    #p3-outer .upload-label:hover { background:#f0f4f8; }
+    #p3-outer .upload-label.manual { border-color:#6c5ce7; color:#6c5ce7; }
+    #p3-outer .upload-input { display:none; }
+    #p3-outer .clear-file-btn { display:none; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; border:none; background:#ff7675; color:white; font-size:0.75em; cursor:pointer; flex-shrink:0; font-weight:bold; transition:0.2s; line-height:1; padding:0; }
+    #p3-outer .clear-file-btn:hover { background:#d63031; transform:scale(1.1); }
+    #p3-outer .status-badge { font-size:0.8em; padding:2px 6px; border-radius:4px; background:#ccc; color:white; }
+    #p3-outer .status-badge.loaded-db { background:#27ae60; }
+    #p3-outer .status-badge.loaded-img { background:#2980b9; }
+    #p3-outer .status-badge.loading-pdf { background:#f39c12; }
+    #p3-outer .tree-deselect-bar { display:none; padding:6px 12px; background:#e8f4fd; border-bottom:1px solid #bee3f8; align-items:center; justify-content:space-between; font-size:0.8em; color:#2980b9; }
+    #p3-outer .tree-deselect-bar.show { display:flex; }
+    #p3-outer .btn-deselect-all { background:none; border:1px solid #2980b9; color:#2980b9; border-radius:4px; padding:2px 8px; cursor:pointer; font-size:0.85em; }
+    #p3-outer .btn-deselect-all:hover { background:#2980b9; color:white; }
+    #p3-outer .tree-menu { padding:10px 0; overflow-y:auto; flex:1; }
+    #p3-outer .tree-section-title { padding:10px 20px; font-size:0.8em; font-weight:bold; color:#888; text-transform:uppercase; margin-top:10px; border-top:1px solid #eee; }
+    #p3-outer .tree-section-actions { display:flex; justify-content:space-between; align-items:center; padding:8px 20px 4px; font-size:0.75em; font-weight:bold; color:#888; text-transform:uppercase; margin-top:10px; border-top:1px solid #eee; }
+    #p3-outer .btn-clear-all-pdf { background:none; border:1px solid #e74c3c; color:#e74c3c; border-radius:3px; padding:1px 6px; cursor:pointer; font-size:0.85em; transition:0.2s; }
+    #p3-outer .btn-clear-all-pdf:hover { background:#e74c3c; color:white; }
+    #p3-outer .pdf-remove-btn { background:none; border:none; color:#ccc; cursor:pointer; font-size:1em; padding:0 4px; transition:0.2s; margin-left:5px; }
+    #p3-outer .pdf-remove-btn:hover { color:#e74c3c; }
+    #p3-outer .tree-item { padding:10px 20px; cursor:pointer; color:#555; font-size:0.9em; transition:0.2s; border-left:4px solid transparent; display:flex; justify-content:space-between; align-items:center; }
+    #p3-outer .tree-item:hover { background:#f0f4f8; }
+    #p3-outer .tree-item.active { background:#e1ecf4; color:#1f4e79; font-weight:bold; border-left:4px solid #1f4e79; }
+    #p3-outer .badge { background-color:#e0e0e0; color:#333; padding:2px 8px; border-radius:12px; font-size:0.8em; }
+    #p3-outer .main-content { flex:1; padding:25px; overflow-y:hidden; display:flex; flex-direction:column; height:100%; }
+    #p3-outer .header-area { padding-bottom:15px; }
+    #p3-outer .header-top { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px; border-bottom:3px solid #1f4e79; padding-bottom:10px; }
+    #p3-outer #p3-searchInput { padding:10px 15px; border-radius:6px; border:1px solid #ddd; width:350px; }
+    #p3-outer .stats-area { font-size:0.9em; color:#666; display:flex; gap:15px; }
+    #p3-outer .search-tabs { display:none; gap:10px; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px; }
+    #p3-outer .search-tabs.show { display:flex; }
+    #p3-outer .search-tab-btn { padding:8px 16px; border:1px solid #ddd; background:white; border-radius:20px; font-size:0.9em; cursor:pointer; color:#666; transition:0.2s; }
+    #p3-outer .search-tab-btn.active { background:#1f4e79; color:white; border-color:#1f4e79; font-weight:bold; }
+    #p3-outer .search-tab-btn.active.manual { background:#6c5ce7; border-color:#6c5ce7; }
+    #p3-outer .db-toolbar { display:flex; gap:8px; margin-bottom:10px; align-items:center; background:#fff; padding:8px 12px; border-radius:6px; border:1px solid #eee; }
+    #p3-outer .toolbar-btn { padding:6px 12px; border:none; border-radius:4px; font-size:0.85em; font-weight:bold; cursor:pointer; color:white; display:flex; align-items:center; gap:5px; opacity:0.9; transition:0.2s; }
+    #p3-outer .toolbar-btn:hover:not(:disabled) { opacity:1; transform:translateY(-1px); }
+    #p3-outer .toolbar-btn:disabled { background-color:#e0e0e0!important; color:#999!important; cursor:not-allowed; }
+    #p3-outer .btn-edit { background-color:#2980b9; }
+    #p3-outer .btn-delete { background-color:#e74c3c; }
+    #p3-outer .btn-add { background-color:#27ae60; }
+    #p3-outer .btn-export { background-color:#2c3e50; }
+    #p3-outer .content-scroll-area { flex:1; overflow-y:auto; position:relative; }
+    #p3-outer .table-wrapper { border-radius:8px; background:white; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+    #p3-outer table { width:100%; border-collapse:collapse; }
+    #p3-outer th { background:#f8f9fa!important; padding:12px; text-align:left; position:sticky; top:0; color:#666!important; font-size:0.9em; border-bottom:2px solid #eee; z-index:10; }
+    #p3-outer td { padding:12px; border-bottom:1px solid #eee; font-size:0.9em; }
+    #p3-outer tr.has-image { background-color:#fafbfc; }
+    #p3-outer tr:hover { background-color:#f0f4f8; }
+    #p3-outer tr.selected-row { background-color:#fff3cd!important; }
+    #p3-outer .pn-code { color:#1f4e79; font-weight:bold; }
+    #p3-outer .pn-clickable { cursor:pointer; color:#e67e22; text-decoration:underline; }
+    #p3-outer .icon-btn { cursor:pointer; opacity:0.7; transition:0.2s; margin:0 3px; font-size:1.1em; }
+    #p3-outer .icon-btn:hover { opacity:1; }
+    #p3-outer .manual-results-list { display:flex; flex-direction:column; gap:10px; padding-bottom:20px; }
+    #p3-outer .manual-result-card { background:white; border:1px solid #eee; border-left:4px solid #6c5ce7; border-radius:6px; padding:15px; }
+    #p3-outer .manual-result-card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.05); }
+    #p3-outer .manual-card-header { display:flex; justify-content:space-between; margin-bottom:8px; font-weight:bold; color:#333; }
+    #p3-outer .manual-snippet { font-size:0.9em; color:#555; background:#f9f9f9; padding:8px; border-radius:4px; line-height:1.5; font-family:monospace; }
+    #p3-outer .highlight { background-color:#ffecd1; color:#e67e22; font-weight:bold; padding:0 2px; border-radius:2px; }
+    #p3-outer .manual-preview-btn { margin-top:10px; padding:5px 12px; background:white; border:1px solid #6c5ce7; color:#6c5ce7; border-radius:4px; cursor:pointer; font-size:0.85em; }
+    #p3-outer .manual-preview-btn:hover { background:#6c5ce7; color:white; }
+    #p3-outer .cart-panel { width:320px; background-color:#fff; display:flex; flex-direction:column; box-shadow:-2px 0 10px rgba(0,0,0,0.05); flex-shrink:0; }
+    #p3-outer .cart-header { padding:20px; background-color:#2c3e50; color:white; display:flex; justify-content:space-between; align-items:center; }
+    #p3-outer .cart-content { flex:1; padding:15px; overflow-y:auto; border-bottom:1px solid #eee; }
+    #p3-outer .cart-item { background:#fdfdfd; border:1px solid #eee; padding:10px; margin-bottom:8px; border-radius:6px; }
+    #p3-outer .qty-control { margin-top:5px; font-size:0.8em; color:#666; display:flex; align-items:center; gap:5px; }
+    #p3-outer .qty-input { width:50px; border:1px solid #ddd; border-radius:3px; text-align:center; padding:2px; }
+    #p3-outer .option-section { padding:15px; background:#f8f9fa; border-top:1px solid #ddd; }
+    #p3-outer .option-toggle { display:flex; align-items:center; gap:8px; font-size:0.85em; font-weight:bold; color:#1f4e79; cursor:pointer; margin-bottom:8px; }
+    #p3-outer .customer-form { display:none; flex-direction:column; gap:6px; }
+    #p3-outer .customer-form.show { display:flex; }
+    #p3-outer .customer-form input { padding:6px; border:1px solid #ddd; border-radius:4px; font-size:0.8em; width:100%; }
+    #p3-outer .btn-area { padding:15px; display:flex; flex-direction:column; gap:8px; background:white; }
+    #p3-outer .btn-copy { width:100%; padding:12px; background:#1f4e79; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold; }
+    #p3-outer .btn-email { width:100%; padding:12px; background:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold; }
+    #p3-outer .p3-toast { position:fixed; bottom:20px; right:20px; padding:12px 25px; background-color:#2c3e50; color:white; border-radius:6px; opacity:0; visibility:hidden; transition:0.3s; z-index:3000; }
+    #p3-outer .p3-toast.show { opacity:1; visibility:visible; }
+    #p3-outer .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:2000; display:none; justify-content:center; align-items:center; }
+    #p3-outer .modal-overlay.show { display:flex; }
+    #p3-outer .modal-content { background:white; border-radius:8px; width:90%; max-width:800px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; }
+    #p3-outer .modal-header { padding:15px 20px; background:#f8f9fa; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; font-weight:bold; font-size:1.1em; }
+    #p3-outer .modal-header button { background:white; border:1px solid #ddd; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.9em; margin-left:8px; }
+    #p3-outer .modal-body { flex:1; overflow:auto; padding:20px; display:flex; justify-content:center; align-items:center; min-height:300px; background:#eee; }
+    #p3-outer #p3-pdfModal .modal-content { width:95vw; max-width:1600px; height:95vh; max-height:95vh; }
+    #p3-outer #p3-pdfModal .modal-header { background:#1a1a2e; color:white; border-bottom:none; }
+    #p3-outer #p3-pdfModal .modal-header button { background:#333; color:white; border:1px solid #555; }
+    #p3-outer #p3-pdfModal .modal-header button:hover { background:#555; }
+    #p3-outer #p3-pdfModal .modal-body { background:#525659; padding:0; display:block; text-align:center; overflow:auto; }
+    #p3-outer .pdf-canvas-wrapper { position:relative; display:inline-block; margin:20px auto; box-shadow:0 0 20px rgba(0,0,0,0.5); }
+    #p3-outer #p3-pdfTextLayer { position:absolute; left:0; top:0; right:0; bottom:0; overflow:hidden; opacity:1; line-height:1; }
+    #p3-outer #p3-pdfTextLayer span { color:transparent; position:absolute; white-space:pre; cursor:text; transform-origin:0% 0%; }
+    #p3-outer #p3-pdfTextLayer span::selection { background:rgba(0,100,255,0.25); color:transparent; }
+    #p3-outer #p3-rowEditModal .modal-content { width:500px; max-height:90vh; overflow:auto; }
+    #p3-outer .edit-form { display:flex; flex-direction:column; gap:15px; padding:20px; }
+    #p3-outer .form-group { display:flex; flex-direction:column; gap:5px; }
+    #p3-outer .form-group label { font-size:0.9em; font-weight:bold; color:#555; }
+    #p3-outer .form-group input, #p3-outer .form-group textarea { padding:8px; border:1px solid #ddd; border-radius:4px; font-family:inherit; }
+    #p3-outer .form-buttons { display:flex; justify-content:flex-end; gap:10px; margin-top:10px; }
+    #p3-outer .btn-save { padding:8px 20px; background:#1f4e79; color:white; border:none; border-radius:4px; cursor:pointer; }
+    #p3-outer .btn-cancel { padding:8px 20px; background:#95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; }
+    #p3-outer .cart-toggle-btn { background:none; border:1.5px solid #ddd; border-radius:6px; font-size:1.1em; width:32px; height:32px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:all 0.15s; opacity:0.45; }
+    #p3-outer .cart-toggle-btn:hover { opacity:0.85; border-color:#e67e22; background:#fff8f0; transform:scale(1.1); }
+    #p3-outer .cart-toggle-btn.in-cart { opacity:1; border-color:#e67e22; background:#fff3e0; }
+    #p3-outer #p3-modalImage { max-width:100%; max-height:70vh; object-fit:contain; }
+    #p3-outer #p3-modalNoImage { color:#d63031; text-align:center; font-weight:bold; }
+
+    /* PAGE 4: PART RETURN STATUS CHECKER */
+    #p4-scroll { width:100%; height:100%; overflow-y:auto; background:#f4f7f9; padding:20px; }
+    #p4-scroll .container { max-width:1400px; margin:0 auto; }
+    #p4-scroll .header { background:white; padding:20px; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); margin-bottom:20px; border-left:5px solid #1f4e79; }
+    #p4-scroll .header h1 { margin:0; color:#1f4e79!important; font-size:24px; display:flex; align-items:center; gap:10px; border:none!important; padding:0!important; }
+    #p4-scroll .upload-section { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px; }
+    #p4-scroll .upload-box { border:2px dashed #dee2e6; padding:15px; border-radius:8px; text-align:center; transition:all 0.3s; background:#f8f9fa; }
+    #p4-scroll .upload-box:hover { border-color:#1f4e79; background:#e6f0fa; }
+    #p4-scroll .upload-box label { display:block; cursor:pointer; font-weight:600; color:#1f4e79; }
+    #p4-scroll .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-bottom:20px; }
+    #p4-scroll .stat-card { background:white; padding:20px; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); text-align:center; }
+    #p4-scroll .stat-value { font-size:28px; font-weight:bold; color:#1f4e79; }
+    #p4-scroll .stat-label { font-size:14px; color:#6c757d; margin-top:5px; }
+    #p4-scroll .table-container { background:white; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); overflow:hidden; margin-bottom:50px; }
+    #p4-scroll table { width:100%; border-collapse:collapse; font-size:13px; }
+    #p4-scroll th { background:#1f4e79!important; color:white!important; padding:12px; text-align:left; position:sticky; top:0; border:none; }
+    #p4-scroll td { padding:10px 12px; border-bottom:1px solid #dee2e6; }
+    #p4-scroll tr:hover { background-color:#f9fbff; }
+    #p4-scroll .status-badge { padding:4px 8px; border-radius:4px; font-weight:bold; font-size:11px; }
+    #p4-scroll .status-done { background:#d4edda; color:#155724; }
+    #p4-scroll .status-pending { background:#fff3cd; color:#856404; }
+    #p4-scroll .search-bar { padding:10px; width:100%; border:1px solid #dee2e6; border-radius:4px; margin-bottom:15px; }
+    #p4-scroll footer { text-align:center; padding:20px; color:#6c757d; font-size:12px; }
+
+    @media (max-width:480px) {
+        .home-cards { grid-template-columns:1fr; }
+        .home-logo h1 { font-size:1.5rem; }
+        #p2-dashboard { grid-template-columns:1fr; }
+        #p3-outer .sidebar { width:200px; }
+        #p3-outer #p3-searchInput { width:180px; }
+    }
+    
+    /* PAGE 2: REPRODUCIBILITY CALCULATOR */
+
+      :root {
+        --primary-color: #1f4e79;
+        --secondary-color: #f4f7f9;
+        --accent-color: #e67e22;
+        --sidebar-width: 260px;
+        --pass-color: #27ae60;
+        --fail-color: #e74c3c;
+      }
+
+#p2-outer * { box-sizing: border-box; }
+#p2-outer body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        margin: 0; display: flex; background-color: var(--secondary-color);
+        height: 100vh; overflow: hidden;
+      }
+
+      /* Sidebar */
+#p2-outer .sidebar {
+        width: var(--sidebar-width); background-color: white;
+        border-right: 1px solid #ddd; display: flex; flex-direction: column;
+      }
+#p2-outer .sidebar-header {
+        padding: 20px; background-color: var(--primary-color);
+        color: white; font-weight: bold; font-size: 1.1em; text-align: center;
+      }
+#p2-outer .menu-section { padding: 15px; flex: 1; }
+#p2-outer .menu-item {
+        padding: 12px 20px; margin-bottom: 5px; cursor: pointer;
+        border-radius: 6px; font-size: 0.9em; transition: 0.2s;
+        color: #555; display: flex; align-items: center; gap: 10px;
+      }
+#p2-outer .menu-item:hover { background: #f0f4f8; }
+#p2-outer .menu-item.active { background: #e1ecf4; color: var(--primary-color); font-weight: bold; }
+
+#p2-outer .sidebar-footer { padding: 15px; border-top: 1px solid #eee; }
+#p2-outer .btn-clear-all {
+        width: 100%; padding: 10px; background: #fff; color: #ff7675;
+        border: 1px solid #ff7675; border-radius: 6px; cursor: pointer;
+        font-weight: bold; transition: 0.2s;
+      }
+#p2-outer .btn-clear-all:hover { background: #fff5f5; }
+
+      /* Main Content */
+#p2-outer .main-content { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; }
+#p2-outer .header-area { border-bottom: 3px solid var(--primary-color); padding-bottom: 15px; margin-bottom: 25px; }
+      
+#p2-outer .calc-container {
+        background: white; padding: 25px; border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); max-width: 800px;
+      }
+
+#p2-outer .input-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+#p2-outer .input-table th {
+        background: #f8f9fa; padding: 12px; border-bottom: 2px solid #eee;
+        text-align: center; color: #666; font-size: 0.9em;
+      }
+#p2-outer .input-table td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
+#p2-outer .val-input {
+        width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;
+        text-align: right; font-family: 'Consolas', monospace;
+      }
+
+#p2-outer .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
+#p2-outer .btn {
+        padding: 10px 20px; border: none; border-radius: 6px;
+        cursor: pointer; font-weight: bold; font-size: 0.9em; transition: 0.2s;
+      }
+#p2-outer .btn-add { background: #f1f3f5; color: #333; border: 1px solid #ccc; }
+#p2-outer .btn-calc { background: var(--primary-color); color: white; flex: 1; }
+#p2-outer .btn-del { background: #ff7675; color: white; padding: 5px 10px; font-size: 0.8em; }
+
+#p2-outer .result-board {
+        background: #f8f9fa; border-left: 5px solid var(--accent-color);
+        padding: 20px; border-radius: 4px; display: grid;
+        grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 15px;
+      }
+#p2-outer .result-item { text-align: center; }
+#p2-outer .result-label { font-size: 0.8em; color: #777; margin-bottom: 5px; }
+#p2-outer .result-value { font-size: 1.4em; font-weight: bold; color: var(--primary-color); }
+#p2-outer .result-value.rsd { color: var(--accent-color); }
+
+#p2-outer .status-area {
+        padding: 15px; border-radius: 6px; text-align: center;
+        font-size: 1.2em; font-weight: bold; color: white;
+        background: #ddd; margin-bottom: 15px;
+      }
+#p2-outer .status-pass { background-color: var(--pass-color); }
+#p2-outer .status-fail { background-color: var(--fail-color); }
+
+#p2-outer .btn-print { width: 100%; background: #2c3e50; color: white; margin-top: 10px; }
+
+#p2-outer .footer-msg { padding: 10px; font-size: 0.75em; color: #ccc; text-align: center; }
+
+      /* Print Styles */
+      @media print {
+        .sidebar, .btn-group, .btn-print, .btn-del, .toast { display: none !important; }
+        body { background: white; }
+        .main-content { padding: 0; }
+        .calc-container { box-shadow: none; border: 1px solid #eee; max-width: 100%; }
+      }
+
+#p2-outer .toast {
+        position: fixed; bottom: 20px; right: 20px; padding: 12px 25px;
+        background-color: #2c3e50; color: white; border-radius: 6px;
+        opacity: 0; visibility: hidden; transition: 0.3s; z-index: 1000;
+      }
+#p2-outer .toast.show { opacity: 1; visibility: visible; }
+    
+    </style>
+</head>
+<body>
+<div id="portal-frame">
+    <nav id="portal-nav">
+        <div class="nav-title" onclick="goPortalHome()">🏠 <span>Agilent KA Team Portal</span></div>
+        <div id="portal-breadcrumb">Home</div>
+    </nav>
+    <div id="portal-body">
+
+        <!-- HOME -->
+        <div id="page-home">
+            <div class="home-logo">
+                <h1>🔧 KA Team Portal</h1>
+                <p>Agilent Technologies · R2 KA Team</p>
+            </div>
+            <div class="home-cards">
+                <div class="home-card" onclick="openSubPage(1)">
+                    <div class="card-num">1</div><div class="card-icon">🔐</div>
+                    <div class="card-title">Control Panel<br>Privileges</div>
+                    <div class="card-desc">OpenLab CDS v2.3~3.0</div>
+                </div>
+                <div class="home-card" onclick="openSubPage(2)">
+                    <div class="card-num">2</div><div class="card-icon">🛠️</div>
+                    <div class="card-title">Agilent Service<br>Portal</div>
+                    <div class="card-desc">Services & Dashboard</div>
+                </div>
+                <div class="home-card" onclick="openSubPage(3)">
+                    <div class="card-num">3</div><div class="card-icon">📦</div>
+                    <div class="card-title">Services<br>Part List</div>
+                    <div class="card-desc">Part Search & Cart</div>
+                </div>
+                <div class="home-card" onclick="openSubPage(4)">
+                    <div class="card-num">4</div><div class="card-icon">🔄</div>
+                    <div class="card-title">Part Return<br>Status Checker</div>
+                    <div class="card-desc">반납 현황 확인</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 1: CONTROL PANEL -->
+        <div id="sub-page-1" class="sub-page">
+            <div id="p1-scroll">
+                <div class="cp-wrap">
+<h1>Privileges in the OpenLab CDS (ver 2.3 - 3.0) Create by R2 KA 1Team</h1>
+
+    <div class="intro-box">
+      <p>
+        The following tables list the privileges that are associated with OpenLab CDS users though the Control Panel for
+        Project privileges, Instrument privileges, and Administrative privileges.
+      </p>
+      <p class="desc-ko">
+        다음 표는 Control Panel을 통해 OpenLab CDS 사용자에게 적용되는 Project 권한, Instrument 권한, Administrative
+        권한과 관련된 Privilege를 설명합니다.
+      </p>
+      <p class="desc-ko">
+        Administration &gt; Role 항목에서 권한(Privileges)을 설정할 수 있으며, 설정된 권한은 사용자(User) 또는
+        그룹(Group) 단위로 적용합니다.
+      </p>
+    </div>
+
+    <!-- PROJECT PRIVILEGES -->
+    <h2>PROJECT PRIVILEGES</h2>
+
+    <h3>Table 4: Project Management</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Manage project or project group</td>
+            <td>
+              <span class="desc-en">User can create or edit project properties and can move the project but cannot view or edit the project
+                access settings.</span>
+              <span class="desc-ko">사용자는 프로젝트 속성을 만들거나 편집할 수 있으며 프로젝트를 이동할 수는 있지만 프로젝트 엑세스 설정에
+                대해 확인하거나 편집할 수 없다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Manage project or project group access</td>
+            <td>
+              <span class="desc-en">User can view and edit the project access settings. This is for "edit privileges" when user right click
+                the location selected.</span>
+              <span class="desc-ko">사용자는 프로젝트 액세스 설정을 보고 편집할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">View project or project group</td>
+            <td>
+              <span class="desc-en">User can see a project and project details but cannot edit. Note: This privilege is required for all
+                users.</span>
+              <span class="desc-ko">사용자는 프로젝트 및 프로젝트 세부 정보를 볼 수 있지만 편집할 수는 없다.</span>
+              <span class="note">*고정된 권한으로 권한 해제 불가</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Access content using web client</td>
+            <td>
+              <span class="desc-en">User can view the data via the Content Management web interface.</span>
+              <span class="desc-ko">사용자는 Content Management Web 화면에서 데이터를 볼 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit content of project</td>
+            <td>
+              <span class="desc-en">User can create new versions of documents (e.g. data, methods, or templates).</span>
+              <span class="desc-ko">사용자는 새로운 버전의 문서를 작성할 수 있다. CDS Project 에 Data, Method, Sequence등을 생성할수
+                있으며, 사용자는 data 생성을 위해 해당 권한을 필요로한다.</span>
+              <span class="note">*해당 권한을 부여받지 않은 경우 Method, Sequence 저장 아이템이 비활성화되어지며, 분석또한
+                불가하다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 5: E-Signature</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">E-Signature Sign Data Files</td>
+            <td>
+              <span class="desc-en">User can sign data files</span>
+              <span class="desc-ko">사용자는 데이터 파일에 서명할수 있다.</span>
+              <span class="note">*해당권한이 부여되지 않은 경우 전자 서명 항목은 비활성화가 아닌 아이템이 보여지지 않는다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Revoke E-Signature</td>
+            <td>
+              <span class="desc-en">User can revoke the e-signature.</span>
+              <span class="desc-ko">사용자는 전자 서명을 취소할 수 있다.</span>
+              <span class="note">*전자서명 이후 해당 아이템이 활성화 되어 지며, 해당 권한을 부여 받지 않은 경우 비활성화로 표시되어
+                진다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 6: Sample Prep</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Create and modify sample prep</td>
+            <td>
+              <span class="desc-en">View, edit, and save an autosampler sample prep file</span>
+              <span class="desc-ko">Autosampler sample prep 파일의 보기, 수정,저장</span>
+              <span class="note">*Acquisition 에서 windows 항목 중 sample prep에 접근시 해당 권한 부여 시 sample prep method 를 생성,
+                수정 그리고 저장 할 수 있다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 7: Acquisition Method</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Create and modify acquisition method</td>
+            <td>
+              <span class="desc-en">Create, edit and save an acquisition method file (*.amx)</span>
+              <span class="desc-ko">AMX(acquisition method) 의 생성, 수정, 저장</span>
+              <span class="note">*해당 권한이 부여되지 않은 경우 저장, 새로운 이름으로 저장이 불가 하다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 8: Processing Method</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Create processing method</td>
+            <td>
+              <span class="desc-en">Create a new processing method (*.pmx), or save a method under a new name.</span>
+              <span class="desc-ko">새로운 PMX(Processing method) 를 생성하거나 새로운 이름으로 저장할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Save Master Method</td>
+            <td>
+              <span class="desc-en">Save changes to a processing method in the Methods folder.</span>
+              <span class="desc-ko">CDS Project Method 폴더에 생성된 Master Method 에 대한 변경 내용을 저장할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Save result set method</td>
+            <td>
+              <span class="desc-en">Save changes to a processing method in the result set folder.</span>
+              <span class="desc-ko">CDS Project Result set 폴더에 생성된 Result Set Method 에 대한 변경 내용을 저장할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit integration parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the Integration Events section of a method.</span>
+              <span class="desc-ko">method항목중 integration event 에대해 확인하고, 편집 할 수 있다.</span>
+              <span class="note">*Standard, Advanced 파라미터 모두 비활성화 상태로 표시.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit identification parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the Compounds &gt; Identification section of a method.</span>
+              <span class="desc-ko">Method 항목 중 compounds 항목의 identification 의 파라미터를 확인하고, 편집 할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit chromatogram extraction parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the Extraction &gt; Chromatogram section of a method.</span>
+              <span class="desc-ko">Method 항목 중 extraction 항목의 chromatogram section 파라미터를 확인하고, 편집 할 수 있다.</span>
+              <span class="note">*Extraction 을 지원하는 method 에 한함( ex. 3D method)</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit spectrum extraction parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the Extraction &gt; Spectrum section of a method.</span>
+              <span class="desc-ko">Method 항목 중 extraction 항목의 spectrum section 파라미터를 확인하고, 편집 할 수 있다.</span>
+              <span class="note">*Extraction 을 지원하는 method에 한함(ex. 3D method)</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit MS library search parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the MS Library Search &gt; Properties section of a method.</span>
+              <span class="desc-ko">Method 항목 중 MS Library Search 항목의 Properties 파라미터를 확인하고 편집할 수 있다.</span>
+              <span class="note">*MS library 를 지원하는 경우에 해당 아이템 확인 가능</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit calibration parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the Compounds &gt; Calibration section of method.</span>
+              <span class="desc-ko">Method 항목 중 Compounds 항목의 Calibration 파라미터를 확인하고 편집할 수 있다.</span>
+              <span class="note">*Calibration 이 가능한 method 에 한함.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit spectra parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the Compounds &gt; Spectra section of method.</span>
+              <span class="desc-ko">Method 항목 중 Compounds 항목의 Spectra 파라미터를 확인하고 편집할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit system suitability parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the Compounds &gt; System Suitability section of method.</span>
+              <span class="desc-ko">Method 항목 중 compounds 항목의 system suitability 파라미터를 확인하고 편집할 수 있다.</span>
+              <span class="note">*System suitability 를 지원하는 method 에 한함.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit custom calculation parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the Tools &gt; Custom Calculation section of a method.</span>
+              <span class="desc-ko">Method 항목 중 tools 항목의 custom calculation 파라미터를 확인하고 편집할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit signal parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the General &gt; Signals section of a method.</span>
+              <span class="desc-ko">Method 의 general 항목의 signals 파라미터를 확인하고 편집할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit sample purity parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the MS Sample Purity section of a method.</span>
+              <span class="desc-ko">Method 항목의 MS sample purity 파라미터를 확인하고 편집할 수 있다. LC/MS Sample Purity DA method 에
+                해당되며, MS sample Purity Properties 항목이 비활성화로 표시</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit reporting parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the Reports &gt; Injection Report section of a method.</span>
+              <span class="desc-ko">Method 항목의 report 항목의 injection report 파라미터를 확인하고 편집할 수 있다.</span>
+              <span class="note">*해당 권한을 부여받지 않은 경우 injection report 아이템이 비활성화로 표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit general parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the General &gt; Properties section of a method.</span>
+              <span class="desc-ko">Method 항목의 general 항목의 properties 파라미터를 확인하고 편집할 수 있다.</span>
+              <span class="note">*info 항목의 comment 입력, global 항목에서 integrator 에 대한 수정</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Load older master method</td>
+            <td>
+              <span class="desc-en">With Content Management, load an older version of a master method.</span>
+              <span class="desc-ko">이전 버전의 master method 를 불러올수 있다.</span>
+              <span class="note">*해당 권한을 부여 받지 않은 경우 method open 진행 시 하단에 이전 ver 에 대한 선택 option 이 비활성화
+                상태이다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 9: Report Template</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Unlock/lock report template items</td>
+            <td>
+              <span class="desc-en">Lock and unlock report template items (tables, chromatograms, groups of items, ...) to control who is
+                allowed to modify those.</span>
+              <span class="desc-ko">Report items 항목에서(표, 크로마토그램, 그룹 등) 을 잠금, 잠금해제하여 수정할 수 있다.</span>
+              <span class="note">*해당 권한이 부여된 경우 아이템 선택 시 잠금/ 잠금해제 항목이 활성화 되어진다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Validate report template</td>
+            <td>
+              <span class="desc-en">Confirm usage of report templates that have been modified outside OpenLab CDS.</span>
+              <span class="desc-ko">외부에서 수정된 report templates의 사용 여부를 확인 할 수 있다. Accept template 를 선택하지 않은 경우
+                template 을 불러오기 할 때마다 메시지가 표시되어지며, 다른 이름으로 저장한 경우에도 Accept 전까지
+                메시지가 발생된다. Accept 되지 않은 report 로 결과처리 진행시 경고기호 워터마크가 함께
+                표시되어진다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Create report template</td>
+            <td>
+              <span class="desc-en">Create and edit report templates in the Reporting view.</span>
+              <span class="desc-ko">Report 를 생성하고 편집 할 수 있으며, 리포트 미리보기를 제공한다.(해당 권한 부여시 Default Report
+                Temple을 추가 할 수 있다. 권한 미 부여시 defaults Temple import item 표시 되지 않는다)</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 10: Sequence Template</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Create and modify sequence template</td>
+            <td>
+              <span class="desc-en">Create, edit and save sequence creation templates (*.stx).</span>
+              <span class="desc-ko">Sequence 를 생성하고, 편집, 저장할수 있다.</span>
+              <span class="note">*해당 권한을 부여받지 않은 경우 sequence creation template 항목은 활성화 되어 있으며, 항목에 접근시
+                생성, 편집이 불가하다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 11: Sequence</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Edit any users running sequence</td>
+            <td>
+              <span class="desc-en">Edit any user's running sequence (status Acquiring in the Run Queue).</span>
+              <span class="desc-ko">사용자는 Acquiring 상태에 있는 다른 사용자에 의해 실행 중인 sequence 를 편집 할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Create and modify sequence</td>
+            <td>
+              <span class="desc-en">Create, edit and save sequences (*.sqx)</span>
+              <span class="desc-ko">Sequence 를 생성하고, 편집하고 저장 할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit users own running sequences</td>
+            <td>
+              <span class="desc-en">Edit your own running sequences (status Acquiring in the Run Queue).</span>
+              <span class="desc-ko">Acquiring 상태에 있는 sequence 를 수정할 수 있다.</span>
+              <span class="note">*해당 권한이 부여되지 않은 경우 edit 항목은 활성화 되어 있으며, sequence를 수정할 수 있지만, update 가
+                불가하다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit method override parameters</td>
+            <td>
+              <span class="desc-en">Override parameters in a predefined acquisition method.</span>
+              <span class="desc-ko">사전에 확인된 Acquisition method를 재정의할수있다.</span>
+              <span class="note">*특정 매개 변수가 수정될 수 있도록 Sequence table 을 설정할 수 있다. 단 해당 기능의 경우 MSD Driver 가
+                설치된 경우에만 사용이 가능하며, MSD Driver 미 설치시 해당 아이템이 비활성화로 표시된다. *2.8 버전부터
+                해당 기능의 경우 MSD 이외 LC 장비에 대한 Override Parameters 를 입력하여 운영할 수 있으며, 해당
+                파라미터의 경우 single run, Sequence run 에서 사용할 수 있다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 12: Audit Trail</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Change method audit trail settings</td>
+            <td>
+              <span class="desc-en">Edit and save method audit trail settings (project properties in the Control Panel).</span>
+              <span class="desc-ko">Control panel &gt; project 항목에서 method audit trail 설정을 편집하고 저장 할 수있다.</span>
+              <span class="note">*Instrument method 항목에 Activated 항목이 비활성화 된다.(Project 항목에서 audit trail 설정이 진행되지
+                않은 경우)</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Review audit trail</td>
+            <td>
+              <span class="desc-en">Confirm that you reviewed a changed audit trail.</span>
+              <span class="desc-ko">변경된 audit trail 에 대한 review 를 진행 할 수 있다.</span>
+              <span class="note">*해당 권한이 부여되어 있지 않는 경우 Review 아이템이 보이지 않는 상태로 표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Add manual audit trail entry</td>
+            <td>
+              <span class="desc-en">Add a manual entry to document your own actions in the audit trail.</span>
+              <span class="desc-ko">수정된 항목에 대해 사용자가 수동으로 audit trail 을 남길수 있다.</span>
+              <span class="note">*method, sequence, project audit trail 에 해당</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 13: Control</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Abort any running sample</td>
+            <td>
+              <span class="desc-en">Abort any running sequence or single run.</span>
+              <span class="desc-ko">다른 사용자가 실행 중인 sequence또는 single 분석에 대해 about 할수 있다.</span>
+              <span class="note">*다른 사용자에 의해 실행중인 sequence, single run 에 해당</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Manual control (in run)</td>
+            <td>
+              <span class="desc-en">Access manual control functions while the instrument is running.</span>
+              <span class="desc-ko">분석 중인 상태에서 manual control 항목에 접근할수있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Manual control (only when instrument idle)</td>
+            <td>
+              <span class="desc-en">Access manual control functions while the instrument is idle.</span>
+              <span class="desc-ko">Idle 상태에서 manual control 항목에 접근할 수 있다.</span>
+              <span class="note">*권한을 부여 받은 사용자는 Instrument Status 에서 Method 항목에 접근 할 수 있으며, Turn devices on
+                아이템이 활성화 되어 진다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">MS autotune and manual tuning</td>
+            <td>
+              <span class="desc-en">Access all MS tune and maintenance functionality, including manual tune, autotune, and check
+                tune.</span>
+              <span class="desc-ko">수동 또는 자동 tune 및 체크 tune 을 포함한 모든 MS tune 및 유지관리 기능에 접근 할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">MS autotune</td>
+            <td>
+              <span class="desc-en">Perform MS autotune and check tune.</span>
+              <span class="desc-ko">Auto tune 을 지원하고 tune 상태를 확인 할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Delete any pending runs</td>
+            <td>
+              <span class="desc-en">Remove pending runs from the Run Queue.</span>
+              <span class="desc-ko">다른사용자가 분석을 위해 실행시킨 Run Queue 항목의 pending 상태에 있는 항목에 대해 제거 할 수 있다.
+                해당 기능 삭제되고, CDS 2.7 에서 Cancel my pending run, Cancel any pending run 으로 대체</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Reorder pending runs</td>
+            <td>
+              <span class="desc-en">Change order of pending runs in the run queue.</span>
+              <span class="desc-ko">Run Queue 항목의 list에 대해 실행 순서를 변경 할 수 있다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 14: Data Processing</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Reprocess data</td>
+            <td>
+              <span class="desc-en">Reprocess injections or result sets.</span>
+              <span class="desc-ko">Result set 에 대해 reprocess 를 진행 할 수 있다.</span>
+              <span class="note">*해당 권한을 부여받지 않은 경우 processing 아이템이 확인되지 않는다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Do manual compound identification</td>
+            <td>
+              <span class="desc-en">Manually assign a compound to a peak.</span>
+              <span class="desc-ko">Manually 로 화합물에 대해 지정할 수 있다.</span>
+              <span class="note">*해당 권한을 부여받지 않는 경우 Assign compound 항목이 표시되지 않는다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Do manual integration</td>
+            <td>
+              <span class="desc-en">Activate manual integration in the Chromatograms window.</span>
+              <span class="desc-ko">크로마토그램 창에서 메뉴얼 적분 기능을 사용 할 수 있다.</span>
+              <span class="note">*해당 권한이 부여되지 않는 경우 크로마토그램 화면에서 메뉴얼 적분 항목이 표시되지 않는다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Do manual chromatogram extraction</td>
+            <td>
+              <span class="desc-en">Manually extract UV wavelength chromatograms or MS (TIC-SIM/TIC-SCAN) chromatograms from your
+                data.</span>
+              <span class="desc-ko">발생된 데이터 중 파장에 대한 크로마토그램을 메뉴얼로 추출 할 수 있다.</span>
+              <span class="note">*MS 데이터에 해당</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Do manual spectrum extraction</td>
+            <td>
+              <span class="desc-en">Manually extract UV or MS spectra from your data.</span>
+              <span class="desc-ko">데이터에서 수동으로 UV 또는 MS 스펙트럼을 추출할 수 있다.</span>
+              <span class="note">*해당 권한이 부여되지 않는 경우 extraction spectrum 항목은 비활성화 상태로 표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Do manual MS library search</td>
+            <td>
+              <span class="desc-en">Manually search for matches in an MS library.</span>
+              <span class="desc-ko">MS 라이브러리에서 수동으로 일치하는 항목을 검색 할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Update master processing method</td>
+            <td>
+              <span class="desc-en">Save changes from a result set method to the corresponding master processing method in the Methods
+                folder.</span>
+              <span class="desc-ko">Result set 폴더의 method 에서 master Processing method 로 변경 사항을 저장 할 수 있다.(Audit trail
+                포함)</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Print results reports</td>
+            <td>
+              <span class="desc-en">Create reports for your methods or results.</span>
+              <span class="desc-ko">Method 또는 results 에 대한 결과 report 를 생성할 수 있다.</span>
+              <span class="note">*해당권한이 부여되지 않는 경우 reports 항목의 print 아이템이 보여지지 않는다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Launch Custom Calculation Editor</td>
+            <td>
+              <span class="desc-en">Start the Custom Calculation Editor from Data Analysis.</span>
+              <span class="desc-ko">Custom Calculation Editor 를 실행 할 수 있다.</span>
+              <span class="note">*해당 권한이 부여되지 않는 경우 tools 항목의 Launch CC Editor 아이템이 보여지지 않는다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 15: File and folder operations</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Delete report templates</td>
+            <td>
+              <span class="desc-en">Delete report templates (*.rdl) in the Data Selection view of Data Analysis.</span>
+              <span class="desc-ko">Data Analysis 에서 Data Selection 항목에 접근하여 확인 되는 Delete Report templates 기능이 활성화 시킬
+                수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Delete sequence templates</td>
+            <td>
+              <span class="desc-en">Delete sequence templates (*.stx) files in the Data Selection view of Data Analysis.</span>
+              <span class="desc-ko">Data analysis 에서 Data Selection 항목에 접근하여 확인되는 Delete Sequence Templates 기능을 활성화 시킬
+                수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Delete methods</td>
+            <td>
+              <span class="desc-en">Delete processing methods (*.pmx) or acquisition methods (*.amx) in the Data Selection view of Data
+                Analysis.</span>
+              <span class="desc-ko">Data analysis 에서 Data Selection 항목에 접근하여 확인되는 Delete Processing Method 기능을 활성화 시킬
+                수 있다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 16: Data</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Export data</td>
+            <td>
+              <span class="desc-en">Export data into an OpenLab archive (*.olax).</span>
+              <span class="desc-ko">OpenLab 아카이브(*.olax)로 데이터 내보내기 할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Import data</td>
+            <td>
+              <span class="desc-en">Import data from OpenLab archives (*.olax) into the OpenLab system.</span>
+              <span class="desc-ko">OpenLab 아카이브(*.olax)에서 OpenLab 시스템으로 데이터 가져오기를 할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Save reports to disk</td>
+            <td>
+              <span class="desc-en">Save or export a report to a location on a disk or network share.</span>
+              <span class="desc-ko">리포트를 Disk 또는 네트워크 공유의 위치로 저장하거나 내보내기 할 수 있다.</span>
+              <span class="note">*해당권한을 부여받지 않는 경우 windows files system 으로 저장 항목이 비활성화로 표시된다</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit sample information</td>
+            <td>
+              <span class="desc-en">Edit information in the Injection List window.</span>
+              <span class="desc-ko">Injection List 창의 정보를 편집할 수 있다.</span>
+              <span class="note">*해당 권한을 부여받지 않는 경우 Project 에서 injection list 창의 항목이 모두 비활성화로 표시되어
+                분석이후 list 에 대한 편집이 불가하다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Lock Results</td>
+            <td>
+              <span class="desc-en">Lock a result set to protect it from being changed.</span>
+              <span class="desc-ko">Project 항목에서 Result Set 의 잠금 기능을 사용한다.</span>
+              <span class="note">*해당 권한이 부여되지 않는 경우 lock 항목이 비활성화로 표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Unlock Results</td>
+            <td>
+              <span class="desc-en">Unlock a locked result set.</span>
+              <span class="desc-ko">Project 항목에서 잠긴 Result Set 을 잠금해제 할 수 있다.</span>
+              <span class="note">*해당 권한이 부여되지 않는 경우 unlock 항목이 비활성화로 표시된다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 18: Custom Tools</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Access Custom Tools section</td>
+            <td>
+              <span class="desc-en">Start external programs that were added to the application via the customization tool</span>
+              <span class="desc-ko">Customization tool 인 Custom tools section 기능을 사용할 수 있다. (별도로 Customization tool 설치 후
+                사용가능)</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 19: Snapshot</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Review snapshot results</td>
+            <td>
+              <span class="desc-en">From Acquisition, open a currently running sample in Data Analysis.</span>
+              <span class="desc-ko">수집중에 데이터에 대해서 Data Analysis 에서 해당 데이터를 확인 할 수 있다.(해당 기능 이용시 single run
+                data 생성)</span>
+              <span class="note">*분석 진행시 활성화 되어지며, 해당 권한이 부여되지 않는 경우 해당 아이템이 보여지지 않는다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- INSTRUMENT PRIVILEGES -->
+    <h2>INSTRUMENT PRIVILEGES</h2>
+
+    <h3>Table 20: Instrument Management</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">View instrument or location</td>
+            <td>
+              <span class="desc-en">User can view and access a location in the tree, but not edit access security, can view
+                properties.</span>
+              <span class="desc-ko">사용자는 트리에서 위치를 보고 액세스할 수 있지만 액세스 보안을 편집할 수는 없으며 속성을 볼 수
+                있다.</span>
+              <span class="note">*고정된 권한으로 권한 해제 불가</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Manage Instrument or location</td>
+            <td>
+              <span class="desc-en">User can create and move locations and edit properties (name, description, etc).</span>
+              <span class="desc-ko">사용자는 위치를 생성하고 이동할 수 있으며 속성(이름, 설명 등)을 편집할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Manage instrument or location access</td>
+            <td>
+              <span class="desc-en">User can view and edit the location access settings.</span>
+              <span class="desc-ko">사용자는 위치 접근 설정을 보고 편집할 수 있다. Edit Privileges 아이템이 비활성화로 표시된다. “Manage
+                Security” privilege 와 중복하여 권한 부여시 “Edit Privileges” 아이템이 활성화되어지기 때문에 해당 기능
+                이용시 “Manage Security” Privilege 를 함께 제외 후 정상적인 권한 적용이 가능하다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Run instrument</td>
+            <td>
+              <span class="desc-en">User can start an instrument session.</span>
+              <span class="desc-ko">사용자는 Instrument 세션을 시작할 수 있다.</span>
+              <span class="note">*해당권한을 부여 받은 경우 Launch 아이템이 활성화되어지며, 부여 받지 않은 경우 비활성화되어진다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Service instrument</td>
+            <td>
+              <span class="desc-en">User can lock or unlock an instrument (to service it).</span>
+              <span class="desc-ko">사용자는 기기를 잠그거나 잠금 해제할 수 있다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ADMINISTRATIVE PRIVILEGES -->
+    <h2>ADMINISTRATIVE PRIVILEGES</h2>
+
+    <h3>Table 21: System Administration</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Manage printers</td>
+            <td>
+              <span class="desc-en">Can add/remove printers and print server.</span>
+              <span class="desc-ko">프린터 및 인쇄 서버를 추가/제거할 수 있음</span>
+              <span class="note">*This is designed for EZChrom, invalid for CDS2. *CDS 2.X 에 지원되지 않는 기능으로 적용 불가, CDS 2.7
+                에서 확인할수 있는 Print Folder 와 별도의 기능으로, Print Folder 의 경우 별도의 권한 부여 없이
+                운영가능</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Edit activity log properties</td>
+            <td>
+              <span class="desc-en">Can change the Activity log Settings in the Control Panel (that is, can turn logging on for the System
+                Activity Log).</span>
+              <span class="desc-ko">제어판에서 활동 로그 설정을 변경할 수 있음 (기능의 활성화 이후 비활성화 불가)</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Create administrative reports</td>
+            <td>
+              <span class="desc-en">Can create any of the system admin reports.</span>
+              <span class="desc-ko">시스템 관리자 보고서를 만들 수 있다.</span>
+              <span class="note">*해당권한을 부여받지 않는 경우 administrative report 아이템이 보여지지 않는다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Manage system components</td>
+            <td>
+              <span class="desc-en">Can install/remove components (applications).</span>
+              <span class="desc-ko">구성 요소(애플리케이션)를 설치/제거할 수 있음</span>
+              <span class="note">*해당권한을 부여받지 않는 경우 system configuration, Diagnostics, Content Management 항목이 보여지지
+                않는다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Manage security</td>
+            <td>
+              <span class="desc-en">Can change security settings and assign security roles. Can edit (add, change etc) users, groups and
+                roles. Can move and delete files and folders in the Content Management database. Note: A user with this
+                privilege can grant himself access to all settings in Shared Services. Be careful who you grant the
+                Manage Security privilege.</span>
+              <span class="desc-ko">보안 설정을 변경하고 보안 역할을 할당할 수 있으며 사용자, 그룹 및 역할을 편집(추가, 변경 등)할 수 있다.
+                Content Management 데이터베이스에서 파일 및 폴더를 이동 및 삭제할 수 있다.</span>
+              <span class="note">*사용자에 부여되는 Password, user, groups 에 대한 권한을 부여받게된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Manage instrument controllers</td>
+            <td>
+              <span class="desc-en">Can edit Instrument Controllers in the Control Panel.</span>
+              <span class="desc-ko">제어판에서 계측기 컨트롤러를 편집할 수 있다. 해당 권한을 부여받지 않은경우 Instrument Controller
+                아이템이 보여지지 않는다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Unlock any locked UI</td>
+            <td>
+              <span class="desc-en">Close the Control Panel and restart as another user.</span>
+              <span class="desc-ko">Control panel 을 종료하고 다시 시작한다.</span>
+              <span class="note">*권한을 부여받은 사용자 세션이 잠긴 상태에서 권한이 없는 사용자가 접속 시도시 (첫번째) *권한을 부여받지
+                않은 사용자 세션이 잠긴 상태에서 권한이 있는 사용자가 접속 시도시(두번째) *해당 권한을 사용자, 관리자
+                모두 부여한 경우 잠긴 세션에 접근시도시 해당 세션을 종료할 수 있다. DA 에선 권한을 부여받은 사용자는
+                권한을 부여받지 않은 사용자, 권한을 부여 받은 사용자 계정이 time base lock 이 된 경우 모두 해제 가능
+                권한을 부여받지 않은 사용자는 다른 사용자 계정 해제시 "user does not have the privilege to unlock a
+                session" 메시지 발생되며 login 불가. *unlock any locked ui 권한을 선택하지 않은 상태로 적용시,
+                사용자계정이 잠긴 상태에서 다른 사용자로 접속 할수 없는 상태로 시스템 운영을 할 수 있다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 22: Content Management</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Archive content</td>
+            <td>
+              <span class="desc-en">User can archive the content of the Content Management data repository.</span>
+              <span class="desc-ko">사용자는 Content Management 데이터 저장소의 내용을 보관할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Manage Templates</td>
+            <td>
+              <span class="desc-en">View, create, update and delete PDF templates.</span>
+              <span class="desc-ko">PDF 템플릿 보기, 만들기, 업데이트 및 삭제</span>
+              <span class="note">*uploading 된 content file 에 대해 새로운 버전으로 update, 복사 등은 가능하지만, 삭제 및 이동은
+                불가하다. * Manage security 권한을 부여한 경우 Move, Delete 가 가능하기 때문에, 해당권한만을
+                제외시킴으로써 PDF Templates 의 대한 생성, 수정, 보기, 삭제 에 대한 기능 제한이 불가하다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 23: Option Privileges (GPC option)</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Processing Method Edit GPC Parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the GPC section of a method</span>
+              <span class="desc-ko">Processing Method에서 GPC section에서 매개변수를 보기 및 편집 할 수 있다. GPC method 를 불러올 수 는
+                있지만, GPC 관련 Parameter 가 모두 비활성화 상태로 표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Data Processing Create and modify GPC Calibration</td>
+            <td>
+              <span class="desc-en">Ability to create and modify a GPC column calibration</span>
+              <span class="desc-ko">GPC Column Calibration에 대한 보정 생성 및 수정 할 수 있다. GPC method 를 불러오고, 파라미터에 대한
+                변경은 가능하지만, calibration 진행은 불가 하다. Calibration 진행을 위한 파라미터 입력은 가능하지만,
+                processing 진행 시 calibration 권한이 없기 때문에 calibration 데이터에 대한 processing 이
+                불가하다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Data Processing Do GPC Analysis</td>
+            <td>
+              <span class="desc-en">Ability to perform a GPC analysis</span>
+              <span class="desc-ko">GPC Analysis 를 실행 할 수 있다. GPC method 를 불러올 수 있으며, 파라미터에 대한 변경을 진행 할 수
+                있지만, 데이터에 해당 method 를 적용할 수 없다. 생성된 method 또는 불러온 method 에 대한 변경 저장은
+                가능하다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- VERSION SPECIFIC -->
+    <h2>VERSION-SPECIFIC ADDITIONS</h2>
+
+    <h3>Table 24: Adding Privileges (ver 2.4)</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Processing method Edit post processing plugins parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the Post Processing Plugins section of a method</span>
+              <span class="desc-ko">CDS 2.X 에서 생성된 데이터 포맷을, Chemstation 에서 확인 할 수 있는 포맷으로 변경하여 저장하는 경우
+                사용되는 기능이다.</span>
+              <span class="note">*chemsation data 또는 AIA 포맷의 데이터 등 을 Export 하는 경우 사용되는 기능이며, Processing Method
+                &gt; Tool Item 에서 접근할 수 있다. Tool 에서 Custom name, output path(Local path) 입력 후 reprocessing
+                진행 시 output path(Local path) 에 custom name.cdf 포맷으로 파일이 생성되어진다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Control Run Priority Sample</td>
+            <td>
+              <span class="desc-en">Submit Priority single samples</span>
+              <span class="desc-ko">단일 분석에 대해서 해당 권한을 부여 받은 경우 priority sample 아이템이 활성화되어 진다. 해당 옵션을
+                선택한 상태에서 분석진행 시 기존 run queue 마지막에 추가에서 pending 상태 중 가장 먼저 분석이 수행
+                된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Data Processing Create New Result Set</td>
+            <td>
+              <span class="desc-en">Combine single samples or sequences from different sources in a new, self-assembled result set</span>
+              <span class="desc-ko">단일 샘플, 시퀀스 또는 두 가지 조합을 결합하여 특정 방법으로 다시 처리하려는 경우 동일한 결과 집합에서
+                서로 다른 소스의 데이터를 결합하려는 경우. 시퀀스를 단축하려는 경우 사용된다. 생성된 result set 에서
+                각각의 data를 가지고 새로운 result set 을 생성할 수 있다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 25: Adding Privileges (ver 2.5)</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">E-Signature Change method status</td>
+            <td>
+              <span class="desc-en">Change the method status for acquisition, sample prep, and processing methods. This is only applicable
+                to OpenLab CDS Workstation Plus.</span>
+              <span class="desc-ko">*사용자는 sample Prep method, Acquisition method, Processing method 의 상태(일반, 승인, 폐기)를 변경할
+                수 있다. (Privileges가 부여되지 않은 경우 비활성화),</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Sample Prep Use Generic sample prep methods</td>
+            <td>
+              <span class="desc-en">Submit runs using sample prep methods with a generic method status. This is only applicable to OpenLab
+                CDS Workstation Plus.</span>
+              <span class="desc-ko">*일반 상태의 sample 준비 방법을 사용할수있다. 3가지 Type 의 Status 중 Privileges 가 부여되지 않은 경우
+                Approved 만 표시되며, Privileges 부여된 경우 Generic, Obsoleted, Approved 상태의 method 가 모두
+                표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Acquisition Method Use Generic acquisition methods</td>
+            <td>
+              <span class="desc-en">Submit runs using acquisition methods with a generic method status. This is only applicable to OpenLab
+                CDS Workstation Plus.</span>
+              <span class="desc-ko">*일반 상태의 Acquisition Method 를 사용할수 있다. 3가지 Type 의 Status 중 Privileges 가 부여되지 않은
+                경우 Approved 만 표시되며, Privileges 부여된 경우 Generic, Obsoleted, Approved 상태의 method 가 모두
+                표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Processing method Use Generic Processing methods</td>
+            <td>
+              <span class="desc-en">Process data using a processing method with a generic method status. This is only applicable to OpenLab
+                CDS Workstation Plus.</span>
+              <span class="desc-ko">*일반 상태의 Processing Method 를 사용할수 있다. 3가지 Type 의 Status 중 Privileges 가 부여되지 않은
+                경우 Approved 만 표시되며, Privileges 부여된 경우 Generic, Obsoleted, Approved 상태의 method 가 모두
+                표시된다. Processing Method 의 경우 method 상태가 존속되어 지기 때문에 master method link 진행시 해당
+                권한을 부여 받지 않은 경우 Processing Method 파라미터에 대한 변경을 진행 할 수 없다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 26: Adding Privileges (ver 2.6)</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Project Management Delete Content of Project</td>
+            <td>
+              <span class="desc-en">If using OpenLab CDS with Content Management: • Required to move and delete project files or folders
+                (e.g. data, methods, or templates) via the Content Management web interface. • Required to delete
+                templates and methods in the Data Selection view of Data Analysis. Note: To move or delete files and
+                folders in the Content Management database that are outside of a project, this privilege is not
+                sufficient; the administrative privilege Manage security must be granted!</span>
+              <span class="desc-ko">Openlab CDS with Content Management 를 사용하는 경우 Content Management web 에서 Project file 및 폴더를
+                Delete, Move 할 수 있다. 2.6 버전에서 추가된 기능으로, 2.5 버전까진 Everything 권한으로 삭제, 이동 이
+                가능했지만, 2.6 버전부턴 해당 권한을 통해 Project file 을 move, delete 할 수 있다. Delete method, Delete
+                sequence templates, Delete Report Templates 의 경우 별도 권한으로 분리되어 있지만, 해당 권한이 부여 되지
+                않는 경우, Delete 아이템 활성화 , 실제 삭제 시 삭제 불가 Pop-up 이 활성화 되어진다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Data Processing Disable/enable calibration points</td>
+            <td>
+              <span class="desc-en">Disable or enable individual points of a calibration curve.</span>
+              <span class="desc-ko">Calibration point 에 대해서 선택적으로 개별 Point 를 활성화, 비활성화 할 수 있다. 해당 Privileges를
+                부여받지 않은 경우 해당 아이템이 보여지지 않는다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Data Processing Integration Optimizer: Display peak results</td>
+            <td>
+              <span class="desc-en">Show the retention time, area, and area % for each integrated peak in the Integration Optimizer.</span>
+              <span class="desc-ko">Integration Optimizer에서 Peak 에 대한 RT, Area% 에 대한 정보를 표시 한다. (Use Integration Optimizer
+                기능이 활성화 되어 있는 상태에서 적용된다.) Layout -&gt; Integration Optimizer 선택하여 아이템에 접근할
+                수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Data Processing Use Integration Optimizer</td>
+            <td>
+              <span class="desc-en">Edit parameters for the integration optimizer, step through the wizard, and use functions offered by
+                the wizard.</span>
+              <span class="desc-ko">Integration Optimizer 를 이용하여 단계별 Integration 파라미터 입력을 통한 Integration 을 진행 할 수
+                있다. 해당 권한을 부여 받지 않은 경우 파라미터 입력 창이 비활성화로 표시된다. Layout -&gt; Integration
+                Optimizer 선택하여 아이템에 접근할 수 있다.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 27: Adding Privileges (ver 2.7)</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Control Cancel any pending run</td>
+            <td>
+              <span class="desc-en">Cancel pending runs in the run queue submitted by any user.</span>
+              <span class="desc-ko">Run Queue List 에 submitted 된 Pending runs 아이템을 다른사용자에 의해 취소(list 삭제) 할수 있다.</span>
+              <span class="note">*해당권한을 부여받은 경우 Run Queue 아이템에서 Pending runs list “Delete Selected item from the run
+                queue” 항목이 다른 사용자가 발생시킨 Run Queue list 에도 활성화된 상태로 시스템을 운영할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Control Cancel my pending run</td>
+            <td>
+              <span class="desc-en">Cancel own pending runs in the run queue.</span>
+              <span class="desc-ko">Run Queue List 에 submitted 된 Pending runs 아이템을 해당 list 를 생성한 사용자만 취소(list 삭제) 할 수
+                있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Control Run single sample</td>
+            <td>
+              <span class="desc-en">Submit regular single samples.</span>
+              <span class="desc-ko">Single samples 분석을 진행할 수 있다.</span>
+              <span class="note">*Single injection 을 Control 할 수 있다. 해당 기능을 부여 받지 않은 경우 Single Sample Analysis -&gt;
+                Run 아이템이 비활성화로 표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Control Modify Instrument configuration in CDS Client</td>
+            <td>
+              <span class="desc-en">Change instrument configuration directly from a running Acquisition client. Note: This privilege is not
+                yet used by all instrument drivers.</span>
+              <span class="desc-ko">Acquisition Client 에서 instrument config 를 진행 할 수 있다.</span>
+              <span class="note">*Acquisition Client에서 기기 구성 변경 할 수 있으며, CDS 클라이언트에서 instrument Config 수행시, 해당
+                Privileges를 필요로 한다. 전체 기능을 사용하려면 LC&amp;CE 드라이버 버전 3.5 이상이 설치되어야 한다.
+                *해당 권한이 없는 경우 control -&gt; configuration 버튼이 비활성화로 표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Control Request access</td>
+            <td>
+              <span class="desc-en">Request access to a sequence, run queue, or instrument that is currently locked by another User.</span>
+              <span class="desc-ko">현재 다른 사용자가 잠근 시퀀스, 실행 대기열 또는 기기에 대한 액세스 요청 할 수 있다.</span>
+              <span class="note">*다른 사용자가 차단한 항목에 대한 액세스를 요청할 수 있는 기능이다. 요청 액세스 권한이 필요하며, 원래
+                차단 사용자는 요청을 거부할 수 있습니다. 60초 동안 응답이 없을 경우 차단된 항목은 자동으로 해제된다.
+                *Sequence 분석 중 해당 Sequence 를 수정상태로 둔 경우, 해당 권한을 가진 사용자는 수정중 상태에 대한 완료
+                요청할수 있으며, Access 요청후 60초 동안 응답이 없을 경우 Edit 상태는 자동으로 해제된다. *Take상태의
+                Instrument 에 대해서 Take 진행한 사용자에게 Release 에 대한 요청을 진행할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Activity Log Access View Activity log</td>
+            <td>
+              <span class="desc-en">Access to the System Activity Log (recording of log entries is not impacted).</span>
+              <span class="desc-ko">System Activity log 에 접속할 수 있다.</span>
+              <span class="note">*System Activity log 대한 보기 접근시 해당 privileges를 필요로 한다.(해당 권한을 부여받지 않은 사용자는
+                경우 system 의 모든 Activity log 가 표시되지 않으며, 기능을 부여받은 사용자만 Activity log 를 확인 할 수
+                있다.)</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Control Override Ad Hoc mode</td>
+            <td>
+              <span class="desc-en">User can exit Ad Hoc mode enabled by a different user.</span>
+              <span class="note">*해당 권한을 부여받지 않은 사용자의 경우 Ad hoc mode 를 해제 할수 없다. (예, A 사용자와 B 사용자는
+                Enable Ad Hoc mode 기능이 선택되어 있으며, Override Ad Hoc mode 기능은 선택되지 않았을 경우 / 두 사용자
+                모두 Ad Hoc mode 를 활성화 할 수 있지만, 해당 모드를 활성화 시킨 사용자 이외 다른 사용자는 해당 모드를
+                해제할수 없다.해당 기능을 부여 받은 사용자의 경우 다른 사용자의 Ad Hoc mode 를 해제 할수있다.)</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Control Enable Ad Hoc mode</td>
+            <td>
+              <span class="desc-en">User can enable Ad Hoc mode, and can exit own enabled Ad Hoc mode.</span>
+              <span class="note">*Take 상태에서 해당 기능을 부여받지 않은 경우 Ad hoc mode 를 사용할 수 없다.(해당 기능 비활성화로
+                표시)</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 28: Adding Privileges (ver 2.8)</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Name</th>
+            <th class="col-desc">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-name">Data Import raw data</td>
+            <td>
+              <span class="desc-en">Import raw data from chemstation or EZChrom, or from the AIA data format.</span>
+              <span class="desc-ko">캠스테이션 또는 이지크롬에서 발생시킨 데이터 중 AIA 데이터 형식을 Import 한다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Data Processing Do manual MS Spectral Deconvolution</td>
+            <td>
+              <span class="desc-en">Manually run MS spectral deconvolution, remove MS spectral deconvolution results.</span>
+              <span class="desc-ko">수동으로 MS Spectral deconvolution 을 실행하며, MS Spectral Deconvolution 결과를 제거 할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Processing Method Edit MS Spectral Deconvolution parameters</td>
+            <td>
+              <span class="desc-en">View and edit the parameters in the Spectral Analysis &gt; MS Spectral Deconvolution section of a
+                method.</span>
+              <span class="desc-ko">MS Spectral method 에서 매개변수를 보고 편집할 수 있다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Secure Storage (Content Browser) Check-in/out</td>
+            <td>
+              <span class="desc-en">Check out, check in, and undo check out of files. In Content Browser: Check out, Check in, Undo Check
+                out.</span>
+              <span class="desc-ko">파일을 체크아웃하고, 체크인하며, 체크아웃을 취소 할 수 있다. 콘텐츠 브라우저에서: 체크아웃, 체크인,
+                체크아웃 취소</span>
+              <span class="note">*Secure Storage 에선 체크인, 체크아웃 기능은 제공하지 않고 있으며, 체크아웃 상태의 파일에 대한
+                취소기능만을 지원하고 있다.(undo checkout)</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Secure Storage (Content Browser) Copy files/folders</td>
+            <td>
+              <span class="desc-en">Copy files and folders to another location in secure storage. In Content Browser: Copy.</span>
+              <span class="desc-ko">콘텐츠 브라우저에서 다른 위치로 파일 및 폴더를 보안 저장소에 복사한다.</span>
+              <span class="note">*권한을 부여 받지 않은 사용자가 해당 Copy files or folders 행위를 진행 시 Secure Storage 에서 Copy
+                아이템은 활성화 되어 있지만, 실제 행위 진행 시 Privileges 부여되지 않아 해당 행위 진행 불가 메시지가
+                발생되며(you do not have privileges to perform this action, please contact your system administrator),
+                Copy 경로 창에서 Copy 아이템이 비활성화로 표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Secure Storage (Content Browser) Create/Rename folder</td>
+            <td>
+              <span class="desc-en">Create or rename folder. In Content Browser: Create folder, Rename folder.</span>
+              <span class="desc-ko">콘텐츠 브라우저에서 폴더를 생성하거나 이름을 변경한다. "폴더 생성", "폴더 이름 변경"</span>
+              <span class="note">*권한을 부여 받지 않은 사용자는 create / rename 아이템 모두 비활성화로 표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Secure Storage (Content Browser) Delete files/folders</td>
+            <td>
+              <span class="desc-en">Delete files and folders from secure storage. In Content Browser: Delete.</span>
+              <span class="desc-ko">콘텐츠 브라우저에서 보안 저장소에서 파일 및 폴더를 삭제한다. "삭제"</span>
+              <span class="note">*권한을 부여 받지 않은 사용자는 Delete 아이템이 비활성화로 표시된다. *기존 Delete/Move 운영 권한인
+                "Delete Content of Project" 을 부여 받은 상태에서 해당 권한을 부여하지 않게 되면, Delete 아이템이
+                비활성화로 표시되어진다. 기존 권한인 "Delete Content of Project" 의 경우 Allows deletion from within
+                OpenLab CDS 으로 변경됨 *delete of content 권한 과, Delete methods, Delete Report templates, Delete
+                sequence templates모두 부여된 상태에선 CDS 에서 생성한 Content 를 삭제 할 수 있으며, 삭제 진행시 Secure
+                Storage 에서도 함께 Content 가 삭제되어 진다. 두가지 권한 중 한가지 권한만 부여된 경우 Delete 액션
+                아이템은 비활성화로 표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Secure Storage (Content Browser) Download files/folders</td>
+            <td>
+              <span class="desc-en">Download files and folders. In Content Browser: Download, Download as zip, Preview files, Create file /
+                folder link, Use file / folder link.</span>
+              <span class="desc-ko">콘텐츠 브라우저에서 파일 및 폴더를 다운로드한다. "다운로드", "ZIP 파일로 다운로드", "파일 미리보기",
+                "파일/폴더 링크 생성", "파일/폴더 링크 사용"</span>
+              <span class="note">*해당 권한을 부여 받지 않은 사용자는 Download 아이템이 비활성화로 표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Secure Storage (Content Browser) e-Sign files</td>
+            <td>
+              <span class="desc-en">Add e-signature to data files. In Content Browser: Electronic Signature.</span>
+              <span class="desc-ko">콘텐츠 브라우저에서 데이터 파일에 전자 서명을 추가한다. "전자 서명"</span>
+              <span class="note">*해당 권한을 부여 받지 않은 사용자는 e-sign 아이템이 비활성화로 표시된다.</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="col-name">Secure Storage (Content Browser) Lock files/Folders</td>
+            <td>
+              <span class="desc-en">Lock files and folders so that they cannot be changed or deleted. In Content Browser: Lock.</span>
+              <span class="desc-ko">콘텐츠 브라우저에서 파일 및 폴더를 변경하거나 삭제할 수 없도록 잠금 처리한다. "잠금"</span>
+              <span class="note"></span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 2: AGILENT SERVICE PORTAL -->
+        <div id="sub-page-2" class="sub-page">
+            <div id="p2-outer" style="display:flex; height:100%; overflow:hidden; background:#f4f7f9;">
+<div class="sidebar">
+      <div class="sidebar-header">Data Integrity Tools</div>
+      <div class="menu-section">
+        <div class="menu-item active" onclick="p2SwitchMode('Area')">📊 Area RSD%</div>
+        <div class="menu-item" onclick="p2SwitchMode('Retention Time')">⏱️ RT RSD%</div>
+        <div class="menu-item" onclick="p2SwitchMode('Height')">📈 Height RSD%</div>
+        <div class="menu-item" onclick="p2SwitchMode('Carryover')">🔄 Carryover %</div>
+      </div>
+      <div class="sidebar-footer">
+        <button class="btn-clear-all" onclick="p2ClearAllData()">⚠️ 전체 초기화 (Clear)</button>
+        <div class="footer-msg">Created by R2 Legends KA Team</div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="header-area">
+        <h2 id="p2-viewTitle">Area Reproducibility (RSD%)</h2>
+      </div>
+
+      <div class="calc-container" id="p2-printableArea">
+        <div id="p2-rsdTableArea">
+          <table class="input-table">
+            <thead>
+              <tr><th width="80">No.</th><th id="p2-columnLabel">Area Value</th><th width="80">Action</th></tr>
+            </thead>
+            <tbody id="p2-inputBody">
+              <tr><td>1</td><td><input type="number" class="val-input" placeholder="0.000"></td><td></td></tr>
+              <tr><td>2</td><td><input type="number" class="val-input" placeholder="0.000"></td><td></td></tr>
+              <tr><td>3</td><td><input type="number" class="val-input" placeholder="0.000"></td><td></td></tr>
+            </tbody>
+          </table>
+          <div class="btn-group">
+            <button class="btn btn-add" onclick="p2AddRow()">+ 행 추가</button>
+            <button class="btn btn-calc" onclick="p2Calculate()">계산 및 판정</button>
+          </div>
+        </div>
+
+        <div id="p2-carryoverTableArea" style="display:none;">
+          <table class="input-table">
+            <thead><tr><th>항목</th><th>Value</th></tr></thead>
+            <tbody>
+              <tr><td>Blank Peak Area</td><td><input type="number" id="p2-carryBlank" class="val-input" placeholder="0.000"></td></tr>
+              <tr><td>Standard Peak Area</td><td><input type="number" id="p2-carryStd" class="val-input" placeholder="0.000"></td></tr>
+            </tbody>
+          </table>
+          <div class="btn-group">
+            <button class="btn btn-calc" onclick="p2Calculate()">Carryover 계산</button>
+          </div>
+        </div>
+
+        <div class="result-board">
+          <div class="result-item">
+            <div class="result-label" id="p2-labelAvg">Average (평균)</div>
+            <div class="result-value" id="p2-resAvg">-</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label" id="p2-labelSD">Std. Dev. (표준편차)</div>
+            <div class="result-value" id="p2-resSD">-</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label" id="p2-labelRSD">RSD (%)</div>
+            <div class="result-value rsd" id="p2-resRSD">-</div>
+          </div>
+        </div>
+
+        <div id="p2-statusBadge" class="status-area">RESULT READY</div>
+
+        <button class="btn btn-print" onclick="window.print()">🖨️ 결과 출력하기 (Print)</button>
+      </div>
+    </div>
+
+    <div id="p2-toast" class="toast"></div>
+            </div>
+        </div>
+
+        <div id="sub-page-3" class="sub-page">
+            <div id="p3-outer">
+<!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">Services Part List</div>
+      
+      <!-- New Deselect Bar -->
+      <div id="p3-treeDeselectBar" class="tree-deselect-bar">
+        <span>카테고리 선택됨</span>
+        <button class="btn-deselect-all" onclick="deselectTreeItem()">↩ 전체 보기</button>
+      </div>
+
+      <div class="upload-section">
+        <div class="upload-row">
+          <label for="p3-dbFileInput" class="upload-label">
+            📊 DB Excel
+            <span id="p3-dbStatus" class="status-badge"></span>
+          </label>
+          <button class="clear-file-btn" id="p3-clearDbBtn" onclick="clearDB()" title="DB 초기화">✕</button>
+          <input type="file" id="p3-dbFileInput" class="upload-input" accept=".xlsx, .xls">
+        </div>
+        
+        <div class="upload-row">
+          <label for="p3-imgFileInput" class="upload-label">
+            🖼 Image Ref
+            <span id="p3-imgStatus" class="status-badge"></span>
+          </label>
+          <button class="clear-file-btn" id="p3-clearImgBtn" onclick="clearImageRef()" title="이미지 참조 초기화">✕</button>
+          <input type="file" id="p3-imgFileInput" class="upload-input" accept=".xlsx, .xls">
+        </div>
+
+        <div class="upload-row">
+          <label for="p3-pdfFileInput" class="upload-label manual">
+            📄 PDF 매뉴얼
+            <span id="p3-pdfStatus" class="status-badge"></span>
+          </label>
+          <button class="clear-file-btn" id="p3-clearPdfBtn" onclick="clearAllPDFs()" title="PDF 전체 초기화">✕</button>
+          <input type="file" id="p3-pdfFileInput" class="upload-input" accept=".pdf" multiple="">
+        </div>
+      </div>
+      
+      <div class="tree-menu" id="p3-treeMenu">
+        <div style="padding: 40px 20px; color: #999; text-align: center; font-size: 0.85em">DB 파일을 업로드하세요.</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="header-area">
+        <div class="header-top">
+          <div>
+            <h2 id="p3-moduleTitle" style="margin: 0 0 5px 0">Part List</h2>
+            <div class="stats-area">
+              <span id="p3-resultCount">결과: 0</span>
+              <span id="p3-imageMatchCount">이미지 매칭: 0</span>
+            </div>
+          </div>
+          <input type="text" id="p3-searchInput" placeholder="Part Number, Description, 매뉴얼 검색...">
+        </div>
+
+        <!-- Search Tabs -->
+        <div class="search-tabs" id="p3-searchTabs">
+          <button class="search-tab-btn active" id="p3-tabDB" onclick="switchTab('db')">📊 DB 검색 (0)</button>
+          <button class="search-tab-btn manual" id="p3-tabManual" onclick="switchTab('manual')">📄 매뉴얼 검색 (0)</button>
+        </div>
+
+        <!-- DB Edit Toolbar -->
+        <div class="db-toolbar" id="p3-dbToolbar">
+          <label style="display: flex; align-items: center; font-size: 0.9em; gap: 5px; cursor: pointer" title="전체 선택/해제">
+            <input type="checkbox" id="p3-selectAllCheckbox"> 전체 선택
+          </label>
+          <div style="width: 1px; height: 20px; background: #eee; margin: 0 5px"></div>
+          <button class="toolbar-btn btn-edit" id="p3-btnEditRow" disabled="" onclick="openEditModal()">✏️ Edit</button>
+          <button class="toolbar-btn btn-delete" id="p3-btnDeleteRow" disabled="" onclick="deleteSelectedRows()">
+            🗑 Delete
+          </button>
+          <button class="toolbar-btn btn-add" id="p3-btnAddRow" onclick="openAddModal()">➕ Add</button>
+          <div style="flex: 1"></div>
+          <button class="toolbar-btn btn-export" id="p3-btnExportDB" onclick="exportDB()">📥 Export DB</button>
+        </div>
+      </div>
+
+      <div class="content-scroll-area" id="p3-contentArea">
+        <!-- DB Table View -->
+        <div class="table-wrapper" id="p3-dbView">
+          <table id="p3-partsTable">
+            <thead>
+              <tr>
+                <th width="40" style="text-align: center">선택</th>
+                <th width="180">Part Number</th>
+                <th>Description</th>
+                <th width="120">Note</th>
+                <th width="50" style="text-align:center; color:#e67e22;">Cart</th>
+              </tr>
+            </thead>
+            <tbody id="p3-tableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Manual Results View -->
+        <div class="manual-results-list" id="p3-manualView" style="display: none">
+          <!-- Results populated by JS -->
+          <div style="text-align: center; padding: 40px; color: #999">검색 결과가 없습니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Cart Panel -->
+    <div class="cart-panel">
+      <div class="cart-header">
+        <span>Selected <span id="p3-cartCount" class="badge">0</span></span>
+        <button id="p3-btnClearCart" style="
+            background: none;
+            border: 1px solid #ff7675;
+            color: #ff7675;
+            cursor: pointer;
+            font-size: 0.7em;
+            border-radius: 4px;
+            padding: 2px 5px;
+          ">
+          Clear
+        </button>
+      </div>
+
+      <div class="cart-content" id="p3-cartContent">
+        <div style="text-align: center; margin-top: 50%; color: #ccc">카트가 비어있습니다.</div>
+      </div>
+
+      <div class="option-section">
+        <label class="option-toggle"> <input type="checkbox" id="p3-optionCheck"> 고객 정보 입력 (선택) </label>
+        <div class="customer-form" id="p3-customerForm">
+          <input type="text" id="p3-custCompany" placeholder="업체명">
+          <input type="text" id="p3-custName" placeholder="담당자">
+          <input type="text" id="p3-custPhone" placeholder="연락처">
+          <input type="text" id="p3-custSerial" placeholder="장비 시리얼 (S/N)">
+          <input type="text" id="p3-custSymptom" placeholder="증상 (Symptom)">
+          <input type="text" id="p3-custNote" placeholder="비고 (Note)">
+        </div>
+      </div>
+
+      <div class="btn-area">
+        <button id="p3-btnCopyCart" class="btn-copy">📋 목록 복사</button>
+        <button id="p3-btnSendEmail" class="btn-email">📧 메일 보내기 (Outlook)</button>
+      </div>
+    </div>
+
+    <div id="p3-toast" class="toast p3-toast" class="toast"></div>
+
+    <!-- Image Modal -->
+    <div id="p3-imageModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span id="p3-modalPartNum">Part Number</span>
+          <div>
+            <button id="p3-modalOpenBtn">원본 보기</button>
+            <button id="p3-modalCloseBtn">닫기</button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <img id="p3-modalImage" src="" alt="Part Image" style="display: none" data-height-listener-added="true">
+          <div id="p3-modalNoImage" style="display: block">
+            이미지가 없습니다.<br>
+            <a href="#" target="_blank" style="display: none">Link</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PDF Viewer Modal -->
+    <div id="p3-pdfModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span id="p3-pdfModalTitle">Manual Name</span>
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span id="p3-pdfPageIndicator" style="font-weight: normal; font-size: 0.9em; margin-right: 10px">Page 1 / 10</span>
+            <button onclick="changePdfPage(-1)">◀ Prev</button>
+            <input id="p3-pdfPageInput" type="number" min="1" style="width:55px; text-align:center; border:1px solid #555; background:#333; color:white; border-radius:4px; padding:3px 5px;" onchange="jumpToPage(this.value)">
+            <button onclick="changePdfPage(1)">Next ▶</button>
+            <button onclick="zoomPdf(0.25)" title="확대">+</button>
+            <button onclick="zoomPdf(-0.25)" title="축소">-</button>
+            <button onclick="closePdfModal()" style="background:#c0392b; border-color:#e74c3c;">✕ Close</button>
+          </div>
+        </div>
+        <div class="modal-body" id="p3-pdfModalBody">
+          <div class="pdf-canvas-wrapper" id="p3-pdfWrapper">
+            <canvas id="p3-pdfCanvas"></canvas>
+            <div id="p3-pdfTextLayer"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row Edit/Add Modal -->
+    <div id="p3-rowEditModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span id="p3-rowEditTitle">DB 항목 수정</span>
+          <button onclick="closeRowEditModal()">✕</button>
+        </div>
+        <div class="edit-form">
+          <input type="hidden" id="p3-editOriginalPn">
+          <div class="form-group">
+            <label>Part Number *</label>
+            <input type="text" id="p3-editPn" placeholder="Required">
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="p3-editDesc" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Note (Category)</label>
+            <input type="text" id="p3-editNote" list="p3-noteList">
+            <datalist id="p3-noteList"></datalist>
+          </div>
+          <div class="form-buttons">
+            <button class="btn-cancel" onclick="closeRowEditModal()">취소</button>
+            <button class="btn-save" onclick="saveRowData()">저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global State
+      let masterData = {}; // { Note: [items...] }
+      let allData = []; // [ {pn, desc, note, imgUrl} ]
+      let cart = {}; // { pn: {desc, qty} }
+      let imageMap = {}; // { pn: {url, name} }
+      let uploadedManuals = []; // [ {name, pdf, pages:[{pageNum, text}], totalPages} ]
+
+      // New State variables
+      let selectedPNs = new Set();
+      let activeSearchTab = 'db'; // 'db' or 'manual'
+      let currentPDFView = { manualIdx: -1, pageNum: 1, scale: 1.5 };
+      let manualSearchResults = [];
+
+      // Initialize PDF.js worker
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+      // --- Upload Handlers ---
+
+      // 1. DB Upload
+      document.getElementById('dbFileInput').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+          processExcelData(jsonData);
+          document.getElementById('dbStatus').className = 'status-badge loaded-db';
+          document.getElementById('dbStatus').innerText = '로드됨';
+          updateClearButtons();
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      // 2. Image Ref Upload
+      document.getElementById('imgFileInput').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          processImageRefExcel(e.target.result);
+          document.getElementById('imgStatus').className = 'status-badge loaded-img';
+          document.getElementById('imgStatus').innerText = '로드됨';
+          updateClearButtons();
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      // 3. PDF Manual Upload
+      document.getElementById('pdfFileInput').addEventListener('change', async function (e) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        const statusBadge = document.getElementById('pdfStatus');
+        statusBadge.className = 'status-badge loading-pdf';
+        statusBadge.innerText = '로딩중...';
+
+        for (let file of files) {
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdfDoc = await loadingTask.promise;
+
+            const pages = [];
+            // Extract text from all pages
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+              const page = await pdfDoc.getPage(i);
+              const textContent = await page.getTextContent();
+              const text = textContent.items.map((item) => item.str).join(' ');
+              pages.push({ pageNum: i, text: text });
+            }
+
+            uploadedManuals.push({
+              name: file.name,
+              pdf: pdfDoc,
+              pages: pages,
+              totalPages: pdfDoc.numPages,
+            });
+            showToast(`PDF 로드됨: ${file.name}`);
+          } catch (err) {
+            console.error(err);
+            showToast(`PDF 오류: ${file.name}`);
+          }
+        }
+
+        statusBadge.className = 'status-badge loaded-db';
+        statusBadge.innerText = `로드됨 (${uploadedManuals.length})`;
+
+        renderTree();
+        updateClearButtons();
+      });
+
+      // --- New Clear Functions ---
+
+      function clearDB() {
+        masterData = {};
+        allData = [];
+        selectedPNs.clear();
+        document.getElementById('dbFileInput').value = '';
+        const badge = document.getElementById('dbStatus');
+        badge.className = 'status-badge';
+        badge.innerText = '';
+        renderTree();
+        renderTable([]);
+        document.getElementById('resultCount').innerText = '결과: 0';
+        document.getElementById('imageMatchCount').innerText = '이미지 매칭: 0';
+        document.getElementById('moduleTitle').innerText = 'Part List';
+        updateToolbarState();
+        showToast('🗑 DB 초기화됨');
+        updateClearButtons();
+      }
+
+      function clearImageRef() {
+        imageMap = {};
+        document.getElementById('imgFileInput').value = '';
+        const badge = document.getElementById('imgStatus');
+        badge.className = 'status-badge';
+        badge.innerText = '';
+        allData.forEach(row => { row.imgUrl = null; });
+        document.getElementById('imageMatchCount').innerText = '이미지 매칭: 0';
+        // Refresh current view
+        const currentFilter = document.querySelector('.tree-item.active span');
+        if (currentFilter && currentFilter.innerText !== 'Part List' && masterData[currentFilter.innerText]) {
+          renderTable(masterData[currentFilter.innerText]);
+        } else {
+          renderTable(allData);
+        }
+        showToast('🗑 이미지 참조 초기화됨');
+        updateClearButtons();
+      }
+
+      function clearAllPDFs() {
+        uploadedManuals = [];
+        document.getElementById('pdfFileInput').value = '';
+        const badge = document.getElementById('pdfStatus');
+        badge.className = 'status-badge';
+        badge.innerText = '';
+        renderTree();
+        showToast('🗑 PDF 전체 초기화됨');
+        updateClearButtons();
+      }
+
+      function removeSinglePDF(idx) {
+        uploadedManuals.splice(idx, 1);
+        const badge = document.getElementById('pdfStatus');
+        if (uploadedManuals.length === 0) {
+          document.getElementById('pdfFileInput').value = '';
+          badge.className = 'status-badge';
+          badge.innerText = '';
+        } else {
+          badge.innerText = `로드됨 (${uploadedManuals.length})`;
+        }
+        renderTree();
+        updateClearButtons();
+      }
+
+      function updateClearButtons() {
+        const dbLoaded = allData.length > 0;
+        const imgLoaded = Object.keys(imageMap).length > 0;
+        const pdfLoaded = uploadedManuals.length > 0;
+        
+        const dbClear = document.getElementById('clearDbBtn');
+        const imgClear = document.getElementById('clearImgBtn');
+        const pdfClear = document.getElementById('clearPdfBtn');
+        
+        if (dbClear) dbClear.style.display = dbLoaded ? 'flex' : 'none';
+        if (imgClear) imgClear.style.display = imgLoaded ? 'flex' : 'none';
+        if (pdfClear) pdfClear.style.display = pdfLoaded ? 'flex' : 'none';
+      }
+
+      function deselectTreeItem() {
+        showAll();
+        highlightTreeItem(document.querySelector('.tree-item')); // Highlight top 'Part List' item
+        document.getElementById('treeDeselectBar').classList.remove('show');
+      }
+
+      // --- Data Processing ---
+
+      function processExcelData(data) {
+        masterData = {};
+        allData = [];
+        const notes = new Set();
+
+        data.forEach((item) => {
+          const pn = String(item['Part Number'] || '').trim();
+          const desc = String(item['Description'] || '');
+          const note = String(item['Note'] || '').trim();
+          if (!pn && !desc) return;
+
+          const row = { pn, desc, note: note || 'Uncategorized', imgUrl: null };
+          if (note) notes.add(note);
+
+          if (!masterData[row.note]) masterData[row.note] = [];
+          masterData[row.note].push(row);
+          allData.push(row);
+        });
+
+        // Update datalist for edit modal
+        const dl = document.getElementById('noteList');
+        dl.innerHTML = '';
+        notes.forEach((n) => {
+          const opt = document.createElement('option');
+          opt.value = n;
+          dl.appendChild(opt);
+        });
+
+        updateImageLinks();
+        renderTree();
+        showAll();
+        showToast('DB 데이터 로드됨!');
+        updateClearButtons();
+      }
+
+      function processImageRefExcel(arrayBuffer) {
+        imageMap = {};
+        const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        // Find columns
+        const headers = jsonData[0] || [];
+        const pnIdx = headers.findIndex((h) => /part\s*no|part\s*number/i.test(String(h)));
+
+        // Basic Hyperlink extraction logic
+        if (sheet['!ref']) {
+          const range = XLSX.utils.decode_range(sheet['!ref']);
+          for (let r = range.s.r; r <= range.e.r; r++) {
+            // Check all cells for hyperlinks if exact col not found or just scan all
+            for (let c = range.s.c; c <= range.e.c; c++) {
+              const cell = sheet[XLSX.utils.encode_cell({ r, c })];
+              if (cell && cell.l && cell.l.Target) {
+                const url = cell.l.Target;
+                const cellVal = String(cell.v || '').trim();
+                // Map both by filename (if cell value is filename) and by cell content
+                if (cellVal) {
+                  imageMap[cellVal] = { url, name: cellVal };
+                  const noExt = cellVal.replace(/\.[^/.]+$/, '');
+                  imageMap[noExt] = { url, name: cellVal };
+                }
+              }
+            }
+          }
+        }
+
+        // Fallback: If PN column exists, check rows
+        if (pnIdx >= 0) {
+          for (let r = 1; r < jsonData.length; r++) {
+            const row = jsonData[r];
+            const pn = String(row[pnIdx] || '').trim();
+            if (pn && imageMap[pn]) {
+              // already matched via hyperlink scan
+            } else if (pn) {
+              // check if there's a link in that cell
+              const addr = XLSX.utils.encode_cell({ r, c: pnIdx });
+              const cell = sheet[addr];
+              if (cell && cell.l && cell.l.Target) {
+                imageMap[pn] = { url: cell.l.Target, name: pn };
+              }
+            }
+          }
+        }
+
+        updateImageLinks();
+        showToast(`이미지 링크 로드됨: ${Object.keys(imageMap).length}건`);
+        updateClearButtons();
+
+        // Refresh view
+        if (activeSearchTab === 'db') {
+          const currentFilter = document.querySelector('.tree-item.active span');
+          if (currentFilter && currentFilter.innerText !== 'Part List') {
+            renderTable(masterData[currentFilter.innerText] || []);
+          } else {
+            renderTable(allData);
+          }
+        }
+      }
+
+      function updateImageLinks() {
+        let matchCount = 0;
+        allData.forEach((row) => {
+          if (imageMap[row.pn]) {
+            row.imgUrl = imageMap[row.pn].url;
+            matchCount++;
+          }
+        });
+        document.getElementById('imageMatchCount').innerText = `이미지 매칭: ${matchCount}`;
+      }
+
+      // --- Tree Menu Rendering ---
+      function renderTree() {
+        const menu = document.getElementById('treeMenu');
+        menu.innerHTML = '';
+
+        // 1. All Data Node
+        const allBtn = document.createElement('div');
+        allBtn.className = 'tree-item active';
+        allBtn.innerHTML = `<span>Part List</span> <span class="badge">${allData.length}</span>`;
+        allBtn.onclick = function () {
+          highlightTreeItem(this);
+          showAll();
+          document.getElementById('treeDeselectBar').classList.remove('show');
+        };
+        menu.appendChild(allBtn);
+
+        // 2. DB Categories
+        Object.keys(masterData)
+          .sort()
+          .forEach((note) => {
+            const mDiv = document.createElement('div');
+            mDiv.className = 'tree-item';
+            mDiv.innerHTML = `<span>${note}</span> <span class="badge">${masterData[note].length}</span>`;
+            mDiv.onclick = function () {
+              highlightTreeItem(this);
+              renderTable(masterData[note]);
+              document.getElementById('moduleTitle').innerText = note;
+              clearSearch();
+              document.getElementById('treeDeselectBar').classList.add('show');
+            };
+            menu.appendChild(mDiv);
+          });
+
+        // 3. Manuals Section
+        if (uploadedManuals.length > 0) {
+          const sepDiv = document.createElement('div');
+          sepDiv.className = 'tree-section-actions';
+          sepDiv.innerHTML = `<span>📄 매뉴얼</span><button class="btn-clear-all-pdf" onclick="clearAllPDFs()" title="PDF 전체 삭제">전체 삭제</button>`;
+          menu.appendChild(sepDiv);
+
+          uploadedManuals.forEach((manual, idx) => {
+            const mItem = document.createElement('div');
+            mItem.className = 'tree-item';
+            mItem.style.paddingRight = '8px';
+            mItem.innerHTML = `
+              <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${manual.name}">${manual.name}</span>
+              <span class="badge" style="margin-right:4px;">${manual.totalPages}p</span>
+              <button class="pdf-remove-btn" onclick="event.stopPropagation();removeSinglePDF(${idx})" title="이 PDF 제거">✕</button>
+            `;
+            mItem.onclick = function () {
+              openPDFModal(idx, 1);
+            };
+            menu.appendChild(mItem);
+          });
+        }
+      }
+
+      function highlightTreeItem(el) {
+        document.querySelectorAll('.tree-item').forEach((i) => i.classList.remove('active'));
+        if (el) el.classList.add('active');
+      }
+
+      function showAll() {
+        renderTable(allData);
+        document.getElementById('moduleTitle').innerText = 'Part List';
+      }
+
+      function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchTabs').classList.remove('show');
+        document.getElementById('dbToolbar').style.display = 'flex';
+        switchTab('db');
+      }
+
+      // --- Search System ---
+
+      document.getElementById('searchInput').addEventListener('input', function (e) {
+        const kw = e.target.value.toLowerCase().trim();
+        const tabs = document.getElementById('searchTabs');
+
+        if (!kw) {
+          tabs.classList.remove('show');
+          document.getElementById('dbToolbar').style.display = 'flex';
+          // Reset to current tree selection
+          const activeNode = document.querySelector('.tree-item.active span');
+          if (activeNode && activeNode.innerText !== 'Part List' && masterData[activeNode.innerText]) {
+            renderTable(masterData[activeNode.innerText]);
+          } else {
+            renderTable(allData);
+          }
+          return;
+        }
+
+        // Show tabs
+        tabs.classList.add('show');
+
+        // 1. Filter DB
+        const dbResults = allData.filter(
+          (i) =>
+            i.pn.toLowerCase().includes(kw) || i.desc.toLowerCase().includes(kw) || i.note.toLowerCase().includes(kw),
+        );
+        document.getElementById('tabDB').innerText = `📊 DB 검색 (${dbResults.length})`;
+
+        // 2. Search Manuals
+        manualSearchResults = [];
+        uploadedManuals.forEach((manual, mIdx) => {
+          manual.pages.forEach((page) => {
+            if (page.text.toLowerCase().includes(kw)) {
+              // Create snippet
+              const idx = page.text.toLowerCase().indexOf(kw);
+              const start = Math.max(0, idx - 40);
+              const end = Math.min(page.text.length, idx + kw.length + 40);
+              let snippet = page.text.substring(start, end);
+
+              // Highlight logic done in render
+              manualSearchResults.push({
+                manualIdx: mIdx,
+                manualName: manual.name,
+                pageNum: page.pageNum,
+                snippet: snippet,
+                keyword: kw,
+              });
+            }
+          });
+        });
+        document.getElementById('tabManual').innerText = `📄 매뉴얼 검색 (${manualSearchResults.length})`;
+
+        // Render current tab
+        if (activeSearchTab === 'db') {
+          renderTable(dbResults);
+        } else {
+          renderManualResults();
+        }
+      });
+
+      function switchTab(tab) {
+        activeSearchTab = tab;
+        document.getElementById('tabDB').className = tab === 'db' ? 'search-tab-btn active' : 'search-tab-btn';
+        document.getElementById('tabManual').className =
+          tab === 'manual' ? 'search-tab-btn active manual' : 'search-tab-btn manual';
+
+        document.getElementById('dbView').style.display = tab === 'db' ? 'block' : 'none';
+        document.getElementById('manualView').style.display = tab === 'manual' ? 'flex' : 'none';
+        document.getElementById('dbToolbar').style.display = tab === 'db' ? 'flex' : 'none';
+
+        // Re-trigger search rendering if input exists
+        const kw = document.getElementById('searchInput').value.trim();
+        if (kw && tab === 'manual') renderManualResults();
+        if (kw && tab === 'db') {
+          document.getElementById('searchInput').dispatchEvent(new Event('input'));
+        }
+      }
+
+      function renderManualResults() {
+        const container = document.getElementById('manualView');
+        if (manualSearchResults.length === 0) {
+          container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">검색 결과가 없습니다.</div>';
+          return;
+        }
+
+        container.innerHTML = manualSearchResults
+          .map((res) => {
+            // Highlight keyword
+            const regex = new RegExp(`(${res.keyword})`, 'gi');
+            const highlightedSnippet = res.snippet.replace(regex, '<span class="highlight">$1</span>');
+
+            return `
+            <div class="manual-result-card">
+                <div class="manual-card-header">
+                    <span>${res.manualName}</span>
+                    <span>p.${res.pageNum}</span>
+                </div>
+                <div class="manual-snippet">...${highlightedSnippet}...</div>
+                <button class="manual-preview-btn" onclick="openPDFModal(${res.manualIdx}, ${res.pageNum})">
+                    📄 페이지 보기
+                </button>
+            </div>
+            `;
+          })
+          .join('');
+      }
+
+      // --- DB Table Rendering & Selection ---
+
+      function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        document.getElementById('resultCount').innerText = `결과: ${data.length}`;
+
+        // Reset selection checkbox UI
+        const allSelected = data.length > 0 && data.every((item) => selectedPNs.has(item.pn));
+        document.getElementById('selectAllCheckbox').checked = allSelected;
+        document.getElementById('selectAllCheckbox').onclick = (e) => toggleSelectAll(e.target.checked, data);
+
+        tbody.innerHTML = data
+          .map((item) => {
+            const hasImg = !!item.imgUrl;
+            const isSelected = selectedPNs.has(item.pn);
+            const trClass = [hasImg ? 'has-image' : '', isSelected ? 'selected-row' : ''].join(' ');
+
+            const imgHtml = hasImg
+              ? `<span class="icon-btn" onclick="openImageModal('${item.pn}')" title="이미지 보기">📷</span>`
+              : '<span style="width:20px;display:inline-block"></span>';
+            const pnTextHtml = hasImg
+              ? `<span class="pn-clickable" onclick="openImageModal('${item.pn}')">${item.pn}</span>`
+              : `<span>${item.pn}</span>`;
+
+            const inCart = !!cart[item.pn];
+            return `
+          <tr class="${trClass}">
+            <td style="text-align:center">
+                <input type="checkbox" title="선택 (Edit/Delete)" onchange="toggleRowSelection('${item.pn}', this.checked)" ${isSelected ? 'checked' : ''}>
+            </td>
+            <td class="pn-code">
+              ${imgHtml}
+              ${pnTextHtml}
+            </td>
+            <td>${item.desc}</td>
+            <td style="color:#888; font-size:0.85em;">${item.note}</td>
+            <td style="text-align:center; padding:6px;">
+              <button class="cart-toggle-btn ${inCart ? 'in-cart' : ''}"
+                      onclick="toggleCartBtn('${item.pn}', '${item.desc.replace(/'/g, "\\'")}', this)"
+                      title="${inCart ? '카트에서 제거' : '카트에 담기'}">
+                ${inCart ? '🛒' : '➕'}
+              </button>
+            </td>
+          </tr>
+          `;
+          })
+          .join('');
+
+        updateToolbarState();
+      }
+
+      function toggleRowSelection(pn, checked) {
+        if (checked) selectedPNs.add(pn);
+        else selectedPNs.delete(pn);
+
+        // Re-render to update row highlighting without full reload
+        // Find row and toggle class
+        // Simpler: just update Toolbar and class
+        const checkbox = document.querySelector(`input[onchange="toggleRowSelection('${pn}', this.checked)"]`);
+        if (checkbox) {
+          const tr = checkbox.closest('tr');
+          if (checked) tr.classList.add('selected-row');
+          else tr.classList.remove('selected-row');
+        }
+        updateToolbarState();
+      }
+
+      function toggleSelectAll(checked, currentData) {
+        currentData.forEach((item) => {
+          if (checked) selectedPNs.add(item.pn);
+          else selectedPNs.delete(item.pn);
+        });
+        renderTable(currentData);
+      }
+
+      function updateToolbarState() {
+        const count = selectedPNs.size;
+        document.getElementById('btnEditRow').disabled = count !== 1;
+        document.getElementById('btnDeleteRow').disabled = count === 0;
+      }
+
+      // --- Cart System ---
+      function toggleCart(pn, desc, add) {
+        if (add) cart[pn] = { desc, qty: 1 };
+        else delete cart[pn];
+        updateCartUI();
+      }
+
+      function toggleCartBtn(pn, desc, btn) {
+        const inCart = !!cart[pn];
+        if (inCart) {
+          delete cart[pn];
+          btn.classList.remove('in-cart');
+          btn.innerHTML = '➕';
+          btn.title = '카트에 담기';
+        } else {
+          cart[pn] = { desc, qty: 1 };
+          btn.classList.add('in-cart');
+          btn.innerHTML = '🛒';
+          btn.title = '카트에서 제거';
+        }
+        updateCartUI();
+      }
+
+      function updateQty(pn, val) {
+        if (cart[pn]) cart[pn].qty = parseInt(val) || 1;
+      }
+
+      function updateCartUI() {
+        const container = document.getElementById('cartContent');
+        const keys = Object.keys(cart);
+        document.getElementById('cartCount').innerText = keys.length;
+        if (keys.length === 0) {
+          container.innerHTML = '<div style="text-align:center; margin-top:50%; color:#ccc">카트가 비어있습니다.</div>';
+          return;
+        }
+        container.innerHTML = keys
+          .map(
+            (pn) => `
+          <div class="cart-item">
+            <div style="font-weight:bold; color:var(--accent-color); font-size:0.85em;">${pn}</div>
+            <div style="color:#555; font-size:0.75em; margin: 2px 0;">${cart[pn].desc}</div>
+            <div class="qty-control">Qty: <input type="number" class="qty-input" value="${cart[pn].qty}" min="1" onchange="updateQty('${pn}', this.value)"></div>
+          </div>
+        `,
+          )
+          .join('');
+      }
+
+      // --- Buttons Actions ---
+      document.getElementById('optionCheck').addEventListener('change', function (e) {
+        document.getElementById('customerForm').classList.toggle('show', e.target.checked);
+      });
+
+      document.getElementById('btnCopyCart').onclick = function () {
+        const text = buildFinalText();
+        if (!text) return showToast('카트가 비어있습니다.');
+        navigator.clipboard.writeText(text).then(() => showToast('클립보드에 복사되었습니다!'));
+      };
+
+      document.getElementById('btnSendEmail').onclick = function () {
+        const text = buildFinalText(true);
+        if (!text) return showToast('카트가 비어있습니다.');
+        window.location.href = `mailto:?subject=${encodeURIComponent('[부품 요청] Services Part List')}&body=${encodeURIComponent(text)}`;
+      };
+
+      document.getElementById('btnClearCart').onclick = function () {
+        cart = {};
+        updateCartUI();
+        // Reset all cart toggle buttons
+        document.querySelectorAll('.cart-toggle-btn').forEach((btn) => {
+          btn.classList.remove('in-cart');
+          btn.innerHTML = '➕';
+          btn.title = '카트에 담기';
+        });
+      };
+
+      function buildFinalText(isEmail = false) {
+        if (Object.keys(cart).length === 0) return null;
+        let text = isEmail ? '아래 서비스내용 공유드립니다..\n 확인 부탁드립니다.\n\n' : '';
+
+        if (document.getElementById('optionCheck').checked) {
+          text += `업체명: ${document.getElementById('custCompany').value || '-'}\n`;
+          text += `담당자: ${document.getElementById('custName').value || '-'}\n`;
+          text += `연락처: ${document.getElementById('custPhone').value || '-'}\n`;
+          text += `S/N: ${document.getElementById('custSerial').value || '-'}\n`;
+          text += `증상: ${document.getElementById('custSymptom').value || '-'}\n`;
+          text += `비고: ${document.getElementById('custNote').value || '-'}\n\n`;
+        }
+
+        text += Object.keys(cart)
+          .map((k) => `${k}\t${cart[k].desc}\t${cart[k].qty}ea`)
+          .join('\n');
+        return text;
+      }
+
+      // --- PDF Preview Modal Logic ---
+
+      async function openPDFModal(manualIdx, pageNum) {
+        const manual = uploadedManuals[manualIdx];
+        if (!manual) return;
+
+        currentPDFView = { manualIdx, pageNum, scale: 1.5 };
+        document.getElementById('pdfModalTitle').innerText = manual.name;
+        document.getElementById('pdfModal').classList.add('show');
+
+        await renderPDFPage();
+      }
+
+      function closePdfModal() {
+        document.getElementById('pdfModal').classList.remove('show');
+      }
+
+      async function changePdfPage(delta) {
+        const manual = uploadedManuals[currentPDFView.manualIdx];
+        const newPage = currentPDFView.pageNum + delta;
+        if (newPage >= 1 && newPage <= manual.totalPages) {
+          currentPDFView.pageNum = newPage;
+          await renderPDFPage();
+        }
+      }
+
+      async function jumpToPage(val) {
+        const manual = uploadedManuals[currentPDFView.manualIdx];
+        const pg = parseInt(val);
+        if (!isNaN(pg) && pg >= 1 && pg <= manual.totalPages) {
+          currentPDFView.pageNum = pg;
+          await renderPDFPage();
+        }
+      }
+
+      async function zoomPdf(delta) {
+        const newScale = currentPDFView.scale + delta;
+        if (newScale >= 0.5 && newScale <= 3.0) {
+          currentPDFView.scale = newScale;
+          await renderPDFPage();
+        }
+      }
+
+      async function renderPDFPage() {
+        const manual = uploadedManuals[currentPDFView.manualIdx];
+        const page = await manual.pdf.getPage(currentPDFView.pageNum);
+
+        const viewport = page.getViewport({ scale: currentPDFView.scale });
+        const canvas = document.getElementById('pdfCanvas');
+        const context = canvas.getContext('2d');
+
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        document.getElementById('pdfPageIndicator').innerText = `Page ${currentPDFView.pageNum} / ${manual.totalPages}`;
+        const pageInput = document.getElementById('pdfPageInput');
+        pageInput.value = currentPDFView.pageNum;
+        pageInput.max = manual.totalPages;
+
+        // Render Page
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+        // Render Text Layer for text selection/copy support
+        const textContent = await page.getTextContent();
+        const textLayerDiv = document.getElementById('pdfTextLayer');
+        textLayerDiv.innerHTML = '';
+        textLayerDiv.style.width = canvas.width + 'px';
+        textLayerDiv.style.height = canvas.height + 'px';
+
+        // Use PDF.js renderTextLayer for proper text selection
+        try {
+          pdfjsLib.renderTextLayer({
+            textContent: textContent,
+            container: textLayerDiv,
+            viewport: viewport,
+            textDivs: [],
+          });
+        } catch (e) {
+          // Fallback: manual text layer
+          textContent.items.forEach((item) => {
+            if (!item.str.trim()) return;
+            const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+            const fontHeight = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]);
+            const span = document.createElement('span');
+            span.textContent = item.str;
+            span.style.left = tx[4] + 'px';
+            span.style.top = (tx[5] - fontHeight) + 'px';
+            span.style.fontSize = fontHeight + 'px';
+            span.style.fontFamily = 'monospace';
+            if (item.str.length > 0 && item.width > 0) {
+              span.style.transform = `scaleX(${(item.width * viewport.scale) / (item.str.length * fontHeight * 0.6)})`;
+            }
+            textLayerDiv.appendChild(span);
+          });
+        }
+      }
+
+      // --- Image Modal ---
+      function openImageModal(pn) {
+        const modal = document.getElementById('imageModal');
+        const img = document.getElementById('modalImage');
+        const noImg = document.getElementById('modalNoImage');
+
+        document.getElementById('modalPartNum').innerText = pn;
+        const imgData = imageMap[pn];
+
+        if (imgData && imgData.url) {
+          img.src = imgData.url;
+          img.style.display = 'block';
+          noImg.style.display = 'none';
+          document.getElementById('modalOpenBtn').onclick = () => window.open(imgData.url, '_blank');
+        } else {
+          img.style.display = 'none';
+          noImg.style.display = 'block';
+        }
+
+        modal.classList.add('show');
+      }
+
+      document.getElementById('modalCloseBtn').onclick = () =>
+        document.getElementById('imageModal').classList.remove('show');
+
+      // --- Row Edit / Add Modal ---
+      function openEditModal() {
+        if (selectedPNs.size !== 1) return;
+        const pn = Array.from(selectedPNs)[0];
+        const row = allData.find((r) => r.pn === pn);
+        if (!row) return;
+
+        document.getElementById('rowEditTitle').innerText = 'DB 항목 수정';
+        document.getElementById('editOriginalPn').value = row.pn;
+        document.getElementById('editPn').value = row.pn;
+        document.getElementById('editDesc').value = row.desc;
+        document.getElementById('editNote').value = row.note;
+
+        document.getElementById('rowEditModal').classList.add('show');
+      }
+
+      function openAddModal() {
+        document.getElementById('rowEditTitle').innerText = 'DB 항목 추가';
+        document.getElementById('editOriginalPn').value = '';
+        document.getElementById('editPn').value = '';
+        document.getElementById('editDesc').value = '';
+        document.getElementById('editNote').value = '';
+
+        document.getElementById('rowEditModal').classList.add('show');
+      }
+
+      function saveRowData() {
+        const originalPn = document.getElementById('editOriginalPn').value;
+        const newPn = document.getElementById('editPn').value.trim();
+        const newDesc = document.getElementById('editDesc').value.trim();
+        const newNote = document.getElementById('editNote').value.trim() || 'Uncategorized';
+
+        if (!newPn) {
+          alert('Part Number를 입력하세요.');
+          return;
+        }
+
+        // Check duplicate PN if adding or changing PN
+        if ((!originalPn || originalPn !== newPn) && allData.some((r) => r.pn === newPn)) {
+          alert('이미 존재하는 Part Number입니다.');
+          return;
+        }
+
+        if (originalPn) {
+          // Edit Mode: Update existing
+          const row = allData.find((r) => r.pn === originalPn);
+          if (row) {
+            // Update Master Data structure if Note changed
+            if (row.note !== newNote) {
+              // Remove from old note list
+              const oldList = masterData[row.note];
+              const idx = oldList.indexOf(row);
+              if (idx > -1) oldList.splice(idx, 1);
+              if (oldList.length === 0) delete masterData[row.note];
+
+              // Add to new note list
+              if (!masterData[newNote]) masterData[newNote] = [];
+              masterData[newNote].push(row);
+            }
+
+            row.pn = newPn;
+            row.desc = newDesc;
+            row.note = newNote;
+
+            // Update Selection Set
+            selectedPNs.delete(originalPn);
+            selectedPNs.add(newPn);
+          }
+        } else {
+          // Add Mode
+          const newRow = { pn: newPn, desc: newDesc, note: newNote, imgUrl: imageMap[newPn]?.url || null };
+          allData.push(newRow);
+          if (!masterData[newNote]) masterData[newNote] = [];
+          masterData[newNote].push(newRow);
+        }
+
+        closeRowEditModal();
+        renderTree();
+
+        // Refresh Table
+        const currentFilter = document.querySelector('.tree-item.active span');
+        if (currentFilter && currentFilter.innerText !== 'Part List' && masterData[currentFilter.innerText]) {
+          renderTable(masterData[currentFilter.innerText]);
+        } else {
+          renderTable(allData);
+        }
+
+        showToast('저장되었습니다.');
+      }
+
+      function closeRowEditModal() {
+        document.getElementById('rowEditModal').classList.remove('show');
+      }
+
+      // --- Delete Rows ---
+      function deleteSelectedRows() {
+        if (selectedPNs.size === 0) return;
+        if (!confirm(`${selectedPNs.size}개 항목을 삭제하시겠습니까?`)) return;
+
+        selectedPNs.forEach((pn) => {
+          const idx = allData.findIndex((r) => r.pn === pn);
+          if (idx > -1) {
+            const row = allData[idx];
+            allData.splice(idx, 1);
+
+            // Remove from masterData
+            const noteList = masterData[row.note];
+            if (noteList) {
+              const noteIdx = noteList.indexOf(row);
+              if (noteIdx > -1) noteList.splice(noteIdx, 1);
+              if (noteList.length === 0) delete masterData[row.note];
+            }
+          }
+        });
+
+        selectedPNs.clear();
+        renderTree();
+        // Refresh Table
+        const currentFilter = document.querySelector('.tree-item.active span');
+        if (currentFilter && currentFilter.innerText !== 'Part List' && masterData[currentFilter.innerText]) {
+          renderTable(masterData[currentFilter.innerText]);
+        } else {
+          renderTable(allData);
+        }
+        showToast('삭제되었습니다.');
+      }
+
+      // --- Export DB ---
+      function exportDB() {
+        if (allData.length === 0) {
+          alert('내보낼 데이터가 없습니다.');
+          return;
+        }
+        const ws = XLSX.utils.json_to_sheet(
+          allData.map((r) => ({
+            'Part Number': r.pn,
+            Description: r.desc,
+            Note: r.note,
+          })),
+        );
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Parts');
+        XLSX.writeFile(wb, 'Parts_DB_Export.xlsx');
+      }
+
+      // --- Toast ---
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
+      }
+    </script>
+  
+
+            </div>
+        </div>
+
+        <!-- PAGE 4: PART RETURN STATUS CHECKER -->
+        <div id="sub-page-4" class="sub-page">
+            <div id="p4-scroll">
+<div class="container">
+    <div class="header">
+        <h1><i class="fas fa-exchange-alt"></i> Part Return Status Checker</h1>
+        <div class="upload-section">
+            <div class="upload-box">
+                <label for="p4-systemFile">1. 시스템 미반납 리스트 (Export Grid)</label>
+                <input type="file" id="p4-systemFile" accept=".xlsx, .xls, .csv" style="margin-top:10px;">
+            </div>
+            <div class="upload-box">
+                <label for="p4-trackingFile">2. 실제 반납 이력 (Return Tracking)</label>
+                <input type="file" id="p4-trackingFile" accept=".xlsx, .xls, .csv" style="margin-top:10px;">
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div id="p4-statTotal" class="stat-value">0</div>
+            <div class="stat-label">총 대상 건수 (System)</div>
+        </div>
+        <div class="stat-card">
+            <div id="p4-statMatched" class="stat-value" style="color: var(--success);">0</div>
+            <div class="stat-label">반납 확인</div>
+        </div>
+        <div id="p4-statPendingCard" class="stat-card">
+            <div id="p4-statPending" class="stat-value" style="color: var(--danger);">0</div>
+            <div class="stat-label">미확인 (Pending)</div>
+        </div>
+    </div>
+
+    <input type="text" id="p4-searchInput" class="search-bar" placeholder="SO#, PN# 또는 고객사명으로 검색...">
+
+    <div class="table-container">
+        <table id="p4-resultTable">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>SO Number</th>
+                    <th>Part Number</th>
+                    <th>Description</th>
+                    <th>Ship To Party</th>
+                    <th>Aging</th>
+                </tr>
+            </thead>
+            <tbody id="p4-tableBody">
+                </tbody>
+        </table>
+    </div>
+
+    <footer>
+        Create by R2 Legends KA Team
+    </footer>
+</div>
+
+<script>
+    let systemData = [];
+    let trackingData = [];
+
+    // 파일 로드 이벤트
+    document.getElementById('systemFile').addEventListener('change', (e) => handleFile(e, 'system'));
+    document.getElementById('trackingFile').addEventListener('change', (e) => handleFile(e, 'tracking'));
+    document.getElementById('searchInput').addEventListener('input', filterTable);
+
+    function handleFile(e, type) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const data = evt.target.result;
+            const workbook = XLSX.read(data, {type: 'binary'});
+            const sheetName = workbook.SheetNames[0];
+            const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+            
+            if(type === 'system') systemData = json;
+            else trackingData = json;
+
+            if(systemData.length > 0) compareAndDisplay();
+        };
+        reader.readAsBinaryString(file);
+    }
+
+    function compareAndDisplay() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        
+        let matchedCount = 0;
+
+        systemData.forEach(sysRow => {
+            // SO Number와 PN 추출 (포맷 정규화)
+            const sysSO = String(sysRow['SO Number'] || sysRow['SO#'] || '').split('.')[0].trim();
+            const sysPN = String(sysRow['Part Number'] || sysRow['PN#'] || '').trim();
+
+            // Tracking 데이터에서 찾기
+            const isReturned = trackingData.some(trRow => {
+                const trSO = String(trRow['SO#'] || trRow['SO Number'] || '').trim();
+                const trPN = String(trRow['PN#'] || trRow['Part Number'] || '').trim();
+                return sysSO === trSO && sysPN === trPN;
+            });
+
+            if(isReturned) matchedCount++;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><span class="status-badge ${isReturned ? 'status-done' : 'status-pending'}">
+                    ${isReturned ? '반납 확인' : '미확인'}
+                </span></td>
+                <td>${sysSO}</td>
+                <td>${sysPN}</td>
+                <td>${sysRow['Part Description'] || sysRow['Part Desc'] || '-'}</td>
+                <td>${sysRow['SO Ship To Party '] || sysRow['Customer'] || '-'}</td>
+                <td>${sysRow['Aging Days'] || '-'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // 대시보드 업데이트
+        document.getElementById('statTotal').innerText = systemData.length;
+        document.getElementById('statMatched').innerText = matchedCount;
+        document.getElementById('statPending').innerText = systemData.length - matchedCount;
+    }
+
+    function filterTable() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('#tableBody tr');
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(query) ? '' : 'none';
+        });
+    }
+</script>
+            </div>
+        </div>
+
+    </div><!-- portal-body -->
+</div><!-- portal-frame -->
+
+<!-- PORTAL NAV SCRIPT -->
+<script>
+function openSubPage(num) {
+    document.getElementById('page-home').style.display = 'none';
+    document.querySelectorAll('.sub-page').forEach(function(p){ p.classList.remove('active'); });
+    var t = document.getElementById('sub-page-' + num);
+    if(t) t.classList.add('active');
+    var titles = {
+        1:'1. Control Panel Privileges',
+        2:'2. Agilent Service Portal',
+        3:'3. Services Part List',
+        4:'4. Part Return Status Checker'
+    };
+    document.getElementById('portal-breadcrumb').innerText = titles[num] || '';
+}
+function goPortalHome() {
+    document.querySelectorAll('.sub-page').forEach(function(p){ p.classList.remove('active'); });
+    document.getElementById('page-home').style.display = '';
+    document.getElementById('portal-breadcrumb').innerText = 'Home';
+}
+</script>
+
+<!-- PAGE 2 SCRIPT -->
+<script>
+(function() {
+  // Isolated scope for Page 2: Reproducibility Calculator
+
+
+      let currentMode = 'Area';
+
+      function p2SwitchMode(mode) {
+        currentMode = mode;
+        document.getElementById('p2-viewTitle').innerText = (mode === 'Carryover') ? 'Carryover Check (Limit ≤ 0.10%)' : `${mode} Reproducibility (RSD%)`;
+        
+        const rsdArea = document.getElementById('p2-rsdTableArea');
+        const carryArea = document.getElementById('p2-carryoverTableArea');
+        const colLabel = document.getElementById('p2-columnLabel');
+
+        if(mode === 'Carryover') {
+          rsdArea.style.display = 'none';
+          carryArea.style.display = 'block';
+          document.getElementById('p2-labelAvg').innerText = 'Formula';
+          document.getElementById('p2-labelSD').innerText = 'Limit';
+          document.getElementById('p2-labelRSD').innerText = 'Result (%)';
+        } else {
+          rsdArea.style.display = 'block';
+          carryArea.style.display = 'none';
+          colLabel.innerText = `${mode} Value`;
+          document.getElementById('p2-labelAvg').innerText = 'Average (평균)';
+          document.getElementById('p2-labelSD').innerText = 'Std. Dev. (표준편차)';
+          document.getElementById('p2-labelRSD').innerText = 'RSD (%)';
+        }
+
+        document.querySelectorAll('#p2-outer .menu-item').forEach(item => {
+          item.classList.toggle('active', item.innerText.includes(mode));
+        });
+        p2ResetResults();
+      }
+
+      function p2AddRow() {
+        const tbody = document.getElementById('p2-inputBody');
+        const rowCount = tbody.rows.length + 1;
+        const row = tbody.insertRow();
+        row.innerHTML = `<td>${rowCount}</td><td><input type="number" class="val-input"></td><td><button class="btn btn-del" onclick="this.parentNode.parentNode.remove(); p2UpdateNo();">삭제</button></td>`;
+      }
+
+      function p2UpdateNo() {
+        const rows = document.getElementById('p2-inputBody').rows;
+        for (let i = 0; i < rows.length; i++) rows[i].cells[0].innerText = i + 1;
+      }
+
+      function p2Calculate() {
+        if (currentMode === 'Carryover') {
+          const blank = parseFloat(document.getElementById('p2-carryBlank').value);
+          const std = parseFloat(document.getElementById('p2-carryStd').value);
+          if (isNaN(blank) || isNaN(std)) return p2ShowToast('모든 값을 입력하세요.');
+          const res = (blank / std) * 100;
+          document.getElementById('p2-resAvg').innerText = "(B/S)*100";
+          document.getElementById('p2-resSD').innerText = "≤ 0.10%";
+          document.getElementById('p2-resRSD').innerText = res.toFixed(4) + '%';
+          p2UpdateBadge(res, 0.10);
+        } else {
+          const vals = Array.from(document.querySelectorAll('#p2-inputBody .val-input')).map(i => parseFloat(i.value)).filter(v => !isNaN(v));
+          if (vals.length < 2) return p2ShowToast('최소 2개 이상의 값을 입력하세요.');
+          const avg = vals.reduce((a, b) => a + b) / vals.length;
+          const sd = Math.sqrt(vals.map(v => Math.pow(v - avg, 2)).reduce((a, b) => a + b) / (vals.length - 1));
+          const rsd = (sd / avg) * 100;
+          document.getElementById('p2-resAvg').innerText = avg.toLocaleString(undefined, {maximumFractionDigits: 3});
+          document.getElementById('p2-resSD').innerText = sd.toLocaleString(undefined, {maximumFractionDigits: 4});
+          document.getElementById('p2-resRSD').innerText = rsd.toFixed(2) + '%';
+          
+          // 판정 기준 설정: Height는 2.0%, 나머지는 1.0% 적용
+          let limitValue = (currentMode === 'Height') ? 2.0 : 1.0;
+          p2UpdateBadge(rsd, limitValue);
+        }
+      }
+
+      function p2UpdateBadge(val, limit) {
+        const badge = document.getElementById('p2-statusBadge');
+        if (val <= limit) {
+          badge.innerText = `PASS (Limit ≤ ${limit}%)`;
+          badge.className = "status-area status-pass";
+        } else {
+          badge.innerText = `FAIL (Limit > ${limit}%)`;
+          badge.className = "status-area status-fail";
+        }
+      }
+
+      function p2ClearAllData() {
+        document.querySelectorAll('#p2-outer .val-input').forEach(input => input.value = '');
+        const tbody = document.getElementById('p2-inputBody');
+        while(tbody.rows.length > 3) tbody.deleteRow(-1);
+        p2ResetResults();
+        p2ShowToast('모든 데이터가 초기화되었습니다.');
+      }
+
+      function p2ResetResults() {
+        document.getElementById('p2-resAvg').innerText = '-';
+        document.getElementById('p2-resSD').innerText = '-';
+        document.getElementById('p2-resRSD').innerText = '-';
+        const badge = document.getElementById('p2-statusBadge');
+        badge.innerText = "RESULT READY";
+        badge.className = "status-area";
+      }
+
+      function p2ShowToast(msg) {
+        const t = document.getElementById('p2-toast');
+        t.innerText = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
+      }
+    
+
+  // Expose only the functions needed by onclick handlers
+  window.p2SwitchMode  = p2SwitchMode;
+  window.p2AddRow      = p2AddRow;
+  window.p2Calculate   = p2Calculate;
+  window.p2ClearAllData = p2ClearAllData;
+  window.p2UpdateNo    = p2UpdateNo;
+})();
+</script>
+
+<!-- PAGE 3 SCRIPT -->
+<script>
+
+      // Global State
+      let masterData = {}; // { Note: [items...] }
+      let allData = []; // [ {pn, desc, note, imgUrl} ]
+      let cart = {}; // { pn: {desc, qty} }
+      let imageMap = {}; // { pn: {url, name} }
+      let uploadedManuals = []; // [ {name, pdf, pages:[{pageNum, text}], totalPages} ]
+
+      // New State variables
+      let selectedPNs = new Set();
+      let activeSearchTab = 'db'; // 'db' or 'manual'
+      let currentPDFView = { manualIdx: -1, pageNum: 1, scale: 1.5 };
+      let manualSearchResults = [];
+
+      // Initialize PDF.js worker
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+      // --- Upload Handlers ---
+
+      // 1. DB Upload
+      document.getElementById('p3-dbFileInput').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+          processExcelData(jsonData);
+          document.getElementById('p3-dbStatus').className = 'status-badge loaded-db';
+          document.getElementById('p3-dbStatus').innerText = '로드됨';
+          updateClearButtons();
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      // 2. Image Ref Upload
+      document.getElementById('p3-imgFileInput').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          processImageRefExcel(e.target.result);
+          document.getElementById('p3-imgStatus').className = 'status-badge loaded-img';
+          document.getElementById('p3-imgStatus').innerText = '로드됨';
+          updateClearButtons();
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      // 3. PDF Manual Upload
+      document.getElementById('p3-pdfFileInput').addEventListener('change', async function (e) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        const statusBadge = document.getElementById('p3-pdfStatus');
+        statusBadge.className = 'status-badge loading-pdf';
+        statusBadge.innerText = '로딩중...';
+
+        for (let file of files) {
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdfDoc = await loadingTask.promise;
+
+            const pages = [];
+            // Extract text from all pages
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+              const page = await pdfDoc.getPage(i);
+              const textContent = await page.getTextContent();
+              const text = textContent.items.map((item) => item.str).join(' ');
+              pages.push({ pageNum: i, text: text });
+            }
+
+            uploadedManuals.push({
+              name: file.name,
+              pdf: pdfDoc,
+              pages: pages,
+              totalPages: pdfDoc.numPages,
+            });
+            showToast(`PDF 로드됨: ${file.name}`);
+          } catch (err) {
+            console.error(err);
+            showToast(`PDF 오류: ${file.name}`);
+          }
+        }
+
+        statusBadge.className = 'status-badge loaded-db';
+        statusBadge.innerText = `로드됨 (${uploadedManuals.length})`;
+
+        renderTree();
+        updateClearButtons();
+      });
+
+      // --- New Clear Functions ---
+
+      function clearDB() {
+        masterData = {};
+        allData = [];
+        selectedPNs.clear();
+        document.getElementById('p3-dbFileInput').value = '';
+        const badge = document.getElementById('p3-dbStatus');
+        badge.className = 'status-badge';
+        badge.innerText = '';
+        renderTree();
+        renderTable([]);
+        document.getElementById('p3-resultCount').innerText = '결과: 0';
+        document.getElementById('p3-imageMatchCount').innerText = '이미지 매칭: 0';
+        document.getElementById('p3-moduleTitle').innerText = 'Part List';
+        updateToolbarState();
+        showToast('🗑 DB 초기화됨');
+        updateClearButtons();
+      }
+
+      function clearImageRef() {
+        imageMap = {};
+        document.getElementById('p3-imgFileInput').value = '';
+        const badge = document.getElementById('p3-imgStatus');
+        badge.className = 'status-badge';
+        badge.innerText = '';
+        allData.forEach(row => { row.imgUrl = null; });
+        document.getElementById('p3-imageMatchCount').innerText = '이미지 매칭: 0';
+        // Refresh current view
+        const currentFilter = document.querySelector('#page3-inner .tree-item.active span');
+        if (currentFilter && currentFilter.innerText !== 'Part List' && masterData[currentFilter.innerText]) {
+          renderTable(masterData[currentFilter.innerText]);
+        } else {
+          renderTable(allData);
+        }
+        showToast('🗑 이미지 참조 초기화됨');
+        updateClearButtons();
+      }
+
+      function clearAllPDFs() {
+        uploadedManuals = [];
+        document.getElementById('p3-pdfFileInput').value = '';
+        const badge = document.getElementById('p3-pdfStatus');
+        badge.className = 'status-badge';
+        badge.innerText = '';
+        renderTree();
+        showToast('🗑 PDF 전체 초기화됨');
+        updateClearButtons();
+      }
+
+      function removeSinglePDF(idx) {
+        uploadedManuals.splice(idx, 1);
+        const badge = document.getElementById('p3-pdfStatus');
+        if (uploadedManuals.length === 0) {
+          document.getElementById('p3-pdfFileInput').value = '';
+          badge.className = 'status-badge';
+          badge.innerText = '';
+        } else {
+          badge.innerText = `로드됨 (${uploadedManuals.length})`;
+        }
+        renderTree();
+        updateClearButtons();
+      }
+
+      function updateClearButtons() {
+        const dbLoaded = allData.length > 0;
+        const imgLoaded = Object.keys(imageMap).length > 0;
+        const pdfLoaded = uploadedManuals.length > 0;
+        
+        const dbClear = document.getElementById('p3-clearDbBtn');
+        const imgClear = document.getElementById('p3-clearImgBtn');
+        const pdfClear = document.getElementById('p3-clearPdfBtn');
+        
+        if (dbClear) dbClear.style.display = dbLoaded ? 'flex' : 'none';
+        if (imgClear) imgClear.style.display = imgLoaded ? 'flex' : 'none';
+        if (pdfClear) pdfClear.style.display = pdfLoaded ? 'flex' : 'none';
+      }
+
+      function deselectTreeItem() {
+        showAll();
+        highlightTreeItem(document.querySelector('#page3-inner .tree-item')); // Highlight top 'Part List' item
+        document.getElementById('p3-treeDeselectBar').classList.remove('show');
+      }
+
+      // --- Data Processing ---
+
+      function processExcelData(data) {
+        masterData = {};
+        allData = [];
+        const notes = new Set();
+
+        data.forEach((item) => {
+          const pn = String(item['Part Number'] || '').trim();
+          const desc = String(item['Description'] || '');
+          const note = String(item['Note'] || '').trim();
+          if (!pn && !desc) return;
+
+          const row = { pn, desc, note: note || 'Uncategorized', imgUrl: null };
+          if (note) notes.add(note);
+
+          if (!masterData[row.note]) masterData[row.note] = [];
+          masterData[row.note].push(row);
+          allData.push(row);
+        });
+
+        // Update datalist for edit modal
+        const dl = document.getElementById('p3-noteList');
+        dl.innerHTML = '';
+        notes.forEach((n) => {
+          const opt = document.createElement('option');
+          opt.value = n;
+          dl.appendChild(opt);
+        });
+
+        updateImageLinks();
+        renderTree();
+        showAll();
+        showToast('DB 데이터 로드됨!');
+        updateClearButtons();
+      }
+
+      function processImageRefExcel(arrayBuffer) {
+        imageMap = {};
+        const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        // Find columns
+        const headers = jsonData[0] || [];
+        const pnIdx = headers.findIndex((h) => /part\s*no|part\s*number/i.test(String(h)));
+
+        // Basic Hyperlink extraction logic
+        if (sheet['!ref']) {
+          const range = XLSX.utils.decode_range(sheet['!ref']);
+          for (let r = range.s.r; r <= range.e.r; r++) {
+            // Check all cells for hyperlinks if exact col not found or just scan all
+            for (let c = range.s.c; c <= range.e.c; c++) {
+              const cell = sheet[XLSX.utils.encode_cell({ r, c })];
+              if (cell && cell.l && cell.l.Target) {
+                const url = cell.l.Target;
+                const cellVal = String(cell.v || '').trim();
+                // Map both by filename (if cell value is filename) and by cell content
+                if (cellVal) {
+                  imageMap[cellVal] = { url, name: cellVal };
+                  const noExt = cellVal.replace(/\.[^/.]+$/, '');
+                  imageMap[noExt] = { url, name: cellVal };
+                }
+              }
+            }
+          }
+        }
+
+        // Fallback: If PN column exists, check rows
+        if (pnIdx >= 0) {
+          for (let r = 1; r < jsonData.length; r++) {
+            const row = jsonData[r];
+            const pn = String(row[pnIdx] || '').trim();
+            if (pn && imageMap[pn]) {
+              // already matched via hyperlink scan
+            } else if (pn) {
+              // check if there's a link in that cell
+              const addr = XLSX.utils.encode_cell({ r, c: pnIdx });
+              const cell = sheet[addr];
+              if (cell && cell.l && cell.l.Target) {
+                imageMap[pn] = { url: cell.l.Target, name: pn };
+              }
+            }
+          }
+        }
+
+        updateImageLinks();
+        showToast(`이미지 링크 로드됨: ${Object.keys(imageMap).length}건`);
+        updateClearButtons();
+
+        // Refresh view
+        if (activeSearchTab === 'db') {
+          const currentFilter = document.querySelector('#page3-inner .tree-item.active span');
+          if (currentFilter && currentFilter.innerText !== 'Part List') {
+            renderTable(masterData[currentFilter.innerText] || []);
+          } else {
+            renderTable(allData);
+          }
+        }
+      }
+
+      function updateImageLinks() {
+        let matchCount = 0;
+        allData.forEach((row) => {
+          if (imageMap[row.pn]) {
+            row.imgUrl = imageMap[row.pn].url;
+            matchCount++;
+          }
+        });
+        document.getElementById('p3-imageMatchCount').innerText = `이미지 매칭: ${matchCount}`;
+      }
+
+      // --- Tree Menu Rendering ---
+      function renderTree() {
+        const menu = document.getElementById('p3-treeMenu');
+        menu.innerHTML = '';
+
+        // 1. All Data Node
+        const allBtn = document.createElement('div');
+        allBtn.className = 'tree-item active';
+        allBtn.innerHTML = `<span>Part List</span> <span class="badge">${allData.length}</span>`;
+        allBtn.onclick = function () {
+          highlightTreeItem(this);
+          showAll();
+          document.getElementById('p3-treeDeselectBar').classList.remove('show');
+        };
+        menu.appendChild(allBtn);
+
+        // 2. DB Categories
+        Object.keys(masterData)
+          .sort()
+          .forEach((note) => {
+            const mDiv = document.createElement('div');
+            mDiv.className = 'tree-item';
+            mDiv.innerHTML = `<span>${note}</span> <span class="badge">${masterData[note].length}</span>`;
+            mDiv.onclick = function () {
+              highlightTreeItem(this);
+              renderTable(masterData[note]);
+              document.getElementById('p3-moduleTitle').innerText = note;
+              clearSearch();
+              document.getElementById('p3-treeDeselectBar').classList.add('show');
+            };
+            menu.appendChild(mDiv);
+          });
+
+        // 3. Manuals Section
+        if (uploadedManuals.length > 0) {
+          const sepDiv = document.createElement('div');
+          sepDiv.className = 'tree-section-actions';
+          sepDiv.innerHTML = `<span>📄 매뉴얼</span><button class="btn-clear-all-pdf" onclick="clearAllPDFs()" title="PDF 전체 삭제">전체 삭제</button>`;
+          menu.appendChild(sepDiv);
+
+          uploadedManuals.forEach((manual, idx) => {
+            const mItem = document.createElement('div');
+            mItem.className = 'tree-item';
+            mItem.style.paddingRight = '8px';
+            mItem.innerHTML = `
+              <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${manual.name}">${manual.name}</span>
+              <span class="badge" style="margin-right:4px;">${manual.totalPages}p</span>
+              <button class="pdf-remove-btn" onclick="event.stopPropagation();removeSinglePDF(${idx})" title="이 PDF 제거">✕</button>
+            `;
+            mItem.onclick = function () {
+              openPDFModal(idx, 1);
+            };
+            menu.appendChild(mItem);
+          });
+        }
+      }
+
+      function highlightTreeItem(el) {
+        document.querySelectorAll('#page3-inner .tree-item').forEach((i) => i.classList.remove('active'));
+        if (el) el.classList.add('active');
+      }
+
+      function showAll() {
+        renderTable(allData);
+        document.getElementById('p3-moduleTitle').innerText = 'Part List';
+      }
+
+      function clearSearch() {
+        document.getElementById('p3-searchInput').value = '';
+        document.getElementById('p3-searchTabs').classList.remove('show');
+        document.getElementById('p3-dbToolbar').style.display = 'flex';
+        switchTab('db');
+      }
+
+      // --- Search System ---
+
+      document.getElementById('p3-searchInput').addEventListener('input', function (e) {
+        const kw = e.target.value.toLowerCase().trim();
+        const tabs = document.getElementById('p3-searchTabs');
+
+        if (!kw) {
+          tabs.classList.remove('show');
+          document.getElementById('p3-dbToolbar').style.display = 'flex';
+          // Reset to current tree selection
+          const activeNode = document.querySelector('#page3-inner .tree-item.active span');
+          if (activeNode && activeNode.innerText !== 'Part List' && masterData[activeNode.innerText]) {
+            renderTable(masterData[activeNode.innerText]);
+          } else {
+            renderTable(allData);
+          }
+          return;
+        }
+
+        // Show tabs
+        tabs.classList.add('show');
+
+        // 1. Filter DB
+        const dbResults = allData.filter(
+          (i) =>
+            i.pn.toLowerCase().includes(kw) || i.desc.toLowerCase().includes(kw) || i.note.toLowerCase().includes(kw),
+        );
+        document.getElementById('p3-tabDB').innerText = `📊 DB 검색 (${dbResults.length})`;
+
+        // 2. Search Manuals
+        manualSearchResults = [];
+        uploadedManuals.forEach((manual, mIdx) => {
+          manual.pages.forEach((page) => {
+            if (page.text.toLowerCase().includes(kw)) {
+              // Create snippet
+              const idx = page.text.toLowerCase().indexOf(kw);
+              const start = Math.max(0, idx - 40);
+              const end = Math.min(page.text.length, idx + kw.length + 40);
+              let snippet = page.text.substring(start, end);
+
+              // Highlight logic done in render
+              manualSearchResults.push({
+                manualIdx: mIdx,
+                manualName: manual.name,
+                pageNum: page.pageNum,
+                snippet: snippet,
+                keyword: kw,
+              });
+            }
+          });
+        });
+        document.getElementById('p3-tabManual').innerText = `📄 매뉴얼 검색 (${manualSearchResults.length})`;
+
+        // Render current tab
+        if (activeSearchTab === 'db') {
+          renderTable(dbResults);
+        } else {
+          renderManualResults();
+        }
+      });
+
+      function switchTab(tab) {
+        activeSearchTab = tab;
+        document.getElementById('p3-tabDB').className = tab === 'db' ? 'search-tab-btn active' : 'search-tab-btn';
+        document.getElementById('p3-tabManual').className =
+          tab === 'manual' ? 'search-tab-btn active manual' : 'search-tab-btn manual';
+
+        document.getElementById('p3-dbView').style.display = tab === 'db' ? 'block' : 'none';
+        document.getElementById('p3-manualView').style.display = tab === 'manual' ? 'flex' : 'none';
+        document.getElementById('p3-dbToolbar').style.display = tab === 'db' ? 'flex' : 'none';
+
+        // Re-trigger search rendering if input exists
+        const kw = document.getElementById('p3-searchInput').value.trim();
+        if (kw && tab === 'manual') renderManualResults();
+        if (kw && tab === 'db') {
+          document.getElementById('p3-searchInput').dispatchEvent(new Event('input'));
+        }
+      }
+
+      function renderManualResults() {
+        const container = document.getElementById('p3-manualView');
+        if (manualSearchResults.length === 0) {
+          container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">검색 결과가 없습니다.</div>';
+          return;
+        }
+
+        container.innerHTML = manualSearchResults
+          .map((res) => {
+            // Highlight keyword
+            const regex = new RegExp(`(${res.keyword})`, 'gi');
+            const highlightedSnippet = res.snippet.replace(regex, '<span class="highlight">$1</span>');
+
+            return `
+            <div class="manual-result-card">
+                <div class="manual-card-header">
+                    <span>${res.manualName}</span>
+                    <span>p.${res.pageNum}</span>
+                </div>
+                <div class="manual-snippet">...${highlightedSnippet}...</div>
+                <button class="manual-preview-btn" onclick="openPDFModal(${res.manualIdx}, ${res.pageNum})">
+                    📄 페이지 보기
+                </button>
+            </div>
+            `;
+          })
+          .join('');
+      }
+
+      // --- DB Table Rendering & Selection ---
+
+      function renderTable(data) {
+        const tbody = document.getElementById('p3-tableBody');
+        document.getElementById('p3-resultCount').innerText = `결과: ${data.length}`;
+
+        // Reset selection checkbox UI
+        const allSelected = data.length > 0 && data.every((item) => selectedPNs.has(item.pn));
+        document.getElementById('p3-selectAllCheckbox').checked = allSelected;
+        document.getElementById('p3-selectAllCheckbox').onclick = (e) => toggleSelectAll(e.target.checked, data);
+
+        tbody.innerHTML = data
+          .map((item) => {
+            const hasImg = !!item.imgUrl;
+            const isSelected = selectedPNs.has(item.pn);
+            const trClass = [hasImg ? 'has-image' : '', isSelected ? 'selected-row' : ''].join(' ');
+
+            const imgHtml = hasImg
+              ? `<span class="icon-btn" onclick="openImageModal('${item.pn}')" title="이미지 보기">📷</span>`
+              : '<span style="width:20px;display:inline-block"></span>';
+            const pnTextHtml = hasImg
+              ? `<span class="pn-clickable" onclick="openImageModal('${item.pn}')">${item.pn}</span>`
+              : `<span>${item.pn}</span>`;
+
+            const inCart = !!cart[item.pn];
+            return `
+          <tr class="${trClass}">
+            <td style="text-align:center">
+                <input type="checkbox" title="선택 (Edit/Delete)" onchange="toggleRowSelection('${item.pn}', this.checked)" ${isSelected ? 'checked' : ''}>
+            </td>
+            <td class="pn-code">
+              ${imgHtml}
+              ${pnTextHtml}
+            </td>
+            <td>${item.desc}</td>
+            <td style="color:#888; font-size:0.85em;">${item.note}</td>
+            <td style="text-align:center; padding:6px;">
+              <button class="cart-toggle-btn ${inCart ? 'in-cart' : ''}"
+                      onclick="toggleCartBtn('${item.pn}', '${item.desc.replace(/'/g, "\\'")}', this)"
+                      title="${inCart ? '카트에서 제거' : '카트에 담기'}">
+                ${inCart ? '🛒' : '➕'}
+              </button>
+            </td>
+          </tr>
+          `;
+          })
+          .join('');
+
+        updateToolbarState();
+      }
+
+      function toggleRowSelection(pn, checked) {
+        if (checked) selectedPNs.add(pn);
+        else selectedPNs.delete(pn);
+
+        // Re-render to update row highlighting without full reload
+        // Find row and toggle class
+        // Simpler: just update Toolbar and class
+        const checkbox = document.querySelector(`input[onchange="toggleRowSelection('${pn}', this.checked)"]`);
+        if (checkbox) {
+          const tr = checkbox.closest('tr');
+          if (checked) tr.classList.add('selected-row');
+          else tr.classList.remove('selected-row');
+        }
+        updateToolbarState();
+      }
+
+      function toggleSelectAll(checked, currentData) {
+        currentData.forEach((item) => {
+          if (checked) selectedPNs.add(item.pn);
+          else selectedPNs.delete(item.pn);
+        });
+        renderTable(currentData);
+      }
+
+      function updateToolbarState() {
+        const count = selectedPNs.size;
+        document.getElementById('p3-btnEditRow').disabled = count !== 1;
+        document.getElementById('p3-btnDeleteRow').disabled = count === 0;
+      }
+
+      // --- Cart System ---
+      function toggleCart(pn, desc, add) {
+        if (add) cart[pn] = { desc, qty: 1 };
+        else delete cart[pn];
+        updateCartUI();
+      }
+
+      function toggleCartBtn(pn, desc, btn) {
+        const inCart = !!cart[pn];
+        if (inCart) {
+          delete cart[pn];
+          btn.classList.remove('in-cart');
+          btn.innerHTML = '➕';
+          btn.title = '카트에 담기';
+        } else {
+          cart[pn] = { desc, qty: 1 };
+          btn.classList.add('in-cart');
+          btn.innerHTML = '🛒';
+          btn.title = '카트에서 제거';
+        }
+        updateCartUI();
+      }
+
+      function updateQty(pn, val) {
+        if (cart[pn]) cart[pn].qty = parseInt(val) || 1;
+      }
+
+      function updateCartUI() {
+        const container = document.getElementById('p3-cartContent');
+        const keys = Object.keys(cart);
+        document.getElementById('p3-cartCount').innerText = keys.length;
+        if (keys.length === 0) {
+          container.innerHTML = '<div style="text-align:center; margin-top:50%; color:#ccc">카트가 비어있습니다.</div>';
+          return;
+        }
+        container.innerHTML = keys
+          .map(
+            (pn) => `
+          <div class="cart-item">
+            <div style="font-weight:bold; color:var(--accent-color); font-size:0.85em;">${pn}</div>
+            <div style="color:#555; font-size:0.75em; margin: 2px 0;">${cart[pn].desc}</div>
+            <div class="qty-control">Qty: <input type="number" class="qty-input" value="${cart[pn].qty}" min="1" onchange="updateQty('${pn}', this.value)"></div>
+          </div>
+        `,
+          )
+          .join('');
+      }
+
+      // --- Buttons Actions ---
+      document.getElementById('p3-optionCheck').addEventListener('change', function (e) {
+        document.getElementById('p3-customerForm').classList.toggle('show', e.target.checked);
+      });
+
+      document.getElementById('p3-btnCopyCart').onclick = function () {
+        const text = buildFinalText();
+        if (!text) return showToast('카트가 비어있습니다.');
+        navigator.clipboard.writeText(text).then(() => showToast('클립보드에 복사되었습니다!'));
+      };
+
+      document.getElementById('p3-btnSendEmail').onclick = function () {
+        const text = buildFinalText(true);
+        if (!text) return showToast('카트가 비어있습니다.');
+        window.location.href = `mailto:?subject=${encodeURIComponent('[부품 요청] Services Part List')}&body=${encodeURIComponent(text)}`;
+      };
+
+      document.getElementById('p3-btnClearCart').onclick = function () {
+        cart = {};
+        updateCartUI();
+        // Reset all cart toggle buttons
+        document.querySelectorAll('#page3-inner .cart-toggle-btn').forEach((btn) => {
+          btn.classList.remove('in-cart');
+          btn.innerHTML = '➕';
+          btn.title = '카트에 담기';
+        });
+      };
+
+      function buildFinalText(isEmail = false) {
+        if (Object.keys(cart).length === 0) return null;
+        let text = isEmail ? '아래 서비스내용 공유드립니다..\n 확인 부탁드립니다.\n\n' : '';
+
+        if (document.getElementById('p3-optionCheck').checked) {
+          text += `업체명: ${document.getElementById('p3-custCompany').value || '-'}\n`;
+          text += `담당자: ${document.getElementById('p3-custName').value || '-'}\n`;
+          text += `연락처: ${document.getElementById('p3-custPhone').value || '-'}\n`;
+          text += `S/N: ${document.getElementById('p3-custSerial').value || '-'}\n`;
+          text += `증상: ${document.getElementById('p3-custSymptom').value || '-'}\n`;
+          text += `비고: ${document.getElementById('p3-custNote').value || '-'}\n\n`;
+        }
+
+        text += Object.keys(cart)
+          .map((k) => `${k}\t${cart[k].desc}\t${cart[k].qty}ea`)
+          .join('\n');
+        return text;
+      }
+
+      // --- PDF Preview Modal Logic ---
+
+      async function openPDFModal(manualIdx, pageNum) {
+        const manual = uploadedManuals[manualIdx];
+        if (!manual) return;
+
+        currentPDFView = { manualIdx, pageNum, scale: 1.5 };
+        document.getElementById('p3-pdfModalTitle').innerText = manual.name;
+        document.getElementById('p3-pdfModal').classList.add('show');
+
+        await renderPDFPage();
+      }
+
+      function closePdfModal() {
+        document.getElementById('p3-pdfModal').classList.remove('show');
+      }
+
+      async function changePdfPage(delta) {
+        const manual = uploadedManuals[currentPDFView.manualIdx];
+        const newPage = currentPDFView.pageNum + delta;
+        if (newPage >= 1 && newPage <= manual.totalPages) {
+          currentPDFView.pageNum = newPage;
+          await renderPDFPage();
+        }
+      }
+
+      async function jumpToPage(val) {
+        const manual = uploadedManuals[currentPDFView.manualIdx];
+        const pg = parseInt(val);
+        if (!isNaN(pg) && pg >= 1 && pg <= manual.totalPages) {
+          currentPDFView.pageNum = pg;
+          await renderPDFPage();
+        }
+      }
+
+      async function zoomPdf(delta) {
+        const newScale = currentPDFView.scale + delta;
+        if (newScale >= 0.5 && newScale <= 3.0) {
+          currentPDFView.scale = newScale;
+          await renderPDFPage();
+        }
+      }
+
+      async function renderPDFPage() {
+        const manual = uploadedManuals[currentPDFView.manualIdx];
+        const page = await manual.pdf.getPage(currentPDFView.pageNum);
+
+        const viewport = page.getViewport({ scale: currentPDFView.scale });
+        const canvas = document.getElementById('p3-pdfCanvas');
+        const context = canvas.getContext('2d');
+
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        document.getElementById('p3-pdfPageIndicator').innerText = `Page ${currentPDFView.pageNum} / ${manual.totalPages}`;
+        const pageInput = document.getElementById('p3-pdfPageInput');
+        pageInput.value = currentPDFView.pageNum;
+        pageInput.max = manual.totalPages;
+
+        // Render Page
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+        // Render Text Layer for text selection/copy support
+        const textContent = await page.getTextContent();
+        const textLayerDiv = document.getElementById('p3-pdfTextLayer');
+        textLayerDiv.innerHTML = '';
+        textLayerDiv.style.width = canvas.width + 'px';
+        textLayerDiv.style.height = canvas.height + 'px';
+
+        // Use PDF.js renderTextLayer for proper text selection
+        try {
+          pdfjsLib.renderTextLayer({
+            textContent: textContent,
+            container: textLayerDiv,
+            viewport: viewport,
+            textDivs: [],
+          });
+        } catch (e) {
+          // Fallback: manual text layer
+          textContent.items.forEach((item) => {
+            if (!item.str.trim()) return;
+            const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+            const fontHeight = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]);
+            const span = document.createElement('span');
+            span.textContent = item.str;
+            span.style.left = tx[4] + 'px';
+            span.style.top = (tx[5] - fontHeight) + 'px';
+            span.style.fontSize = fontHeight + 'px';
+            span.style.fontFamily = 'monospace';
+            if (item.str.length > 0 && item.width > 0) {
+              span.style.transform = `scaleX(${(item.width * viewport.scale) / (item.str.length * fontHeight * 0.6)})`;
+            }
+            textLayerDiv.appendChild(span);
+          });
+        }
+      }
+
+      // --- Image Modal ---
+      function openImageModal(pn) {
+        const modal = document.getElementById('p3-imageModal');
+        const img = document.getElementById('p3-modalImage');
+        const noImg = document.getElementById('p3-modalNoImage');
+
+        document.getElementById('p3-modalPartNum').innerText = pn;
+        const imgData = imageMap[pn];
+
+        if (imgData && imgData.url) {
+          img.src = imgData.url;
+          img.style.display = 'block';
+          noImg.style.display = 'none';
+          document.getElementById('p3-modalOpenBtn').onclick = () => window.open(imgData.url, '_blank');
+        } else {
+          img.style.display = 'none';
+          noImg.style.display = 'block';
+        }
+
+        modal.classList.add('show');
+      }
+
+      document.getElementById('p3-modalCloseBtn').onclick = () =>
+        document.getElementById('p3-imageModal').classList.remove('show');
+
+      // --- Row Edit / Add Modal ---
+      function openEditModal() {
+        if (selectedPNs.size !== 1) return;
+        const pn = Array.from(selectedPNs)[0];
+        const row = allData.find((r) => r.pn === pn);
+        if (!row) return;
+
+        document.getElementById('p3-rowEditTitle').innerText = 'DB 항목 수정';
+        document.getElementById('p3-editOriginalPn').value = row.pn;
+        document.getElementById('p3-editPn').value = row.pn;
+        document.getElementById('p3-editDesc').value = row.desc;
+        document.getElementById('p3-editNote').value = row.note;
+
+        document.getElementById('p3-rowEditModal').classList.add('show');
+      }
+
+      function openAddModal() {
+        document.getElementById('p3-rowEditTitle').innerText = 'DB 항목 추가';
+        document.getElementById('p3-editOriginalPn').value = '';
+        document.getElementById('p3-editPn').value = '';
+        document.getElementById('p3-editDesc').value = '';
+        document.getElementById('p3-editNote').value = '';
+
+        document.getElementById('p3-rowEditModal').classList.add('show');
+      }
+
+      function saveRowData() {
+        const originalPn = document.getElementById('p3-editOriginalPn').value;
+        const newPn = document.getElementById('p3-editPn').value.trim();
+        const newDesc = document.getElementById('p3-editDesc').value.trim();
+        const newNote = document.getElementById('p3-editNote').value.trim() || 'Uncategorized';
+
+        if (!newPn) {
+          alert('Part Number를 입력하세요.');
+          return;
+        }
+
+        // Check duplicate PN if adding or changing PN
+        if ((!originalPn || originalPn !== newPn) && allData.some((r) => r.pn === newPn)) {
+          alert('이미 존재하는 Part Number입니다.');
+          return;
+        }
+
+        if (originalPn) {
+          // Edit Mode: Update existing
+          const row = allData.find((r) => r.pn === originalPn);
+          if (row) {
+            // Update Master Data structure if Note changed
+            if (row.note !== newNote) {
+              // Remove from old note list
+              const oldList = masterData[row.note];
+              const idx = oldList.indexOf(row);
+              if (idx > -1) oldList.splice(idx, 1);
+              if (oldList.length === 0) delete masterData[row.note];
+
+              // Add to new note list
+              if (!masterData[newNote]) masterData[newNote] = [];
+              masterData[newNote].push(row);
+            }
+
+            row.pn = newPn;
+            row.desc = newDesc;
+            row.note = newNote;
+
+            // Update Selection Set
+            selectedPNs.delete(originalPn);
+            selectedPNs.add(newPn);
+          }
+        } else {
+          // Add Mode
+          const newRow = { pn: newPn, desc: newDesc, note: newNote, imgUrl: imageMap[newPn]?.url || null };
+          allData.push(newRow);
+          if (!masterData[newNote]) masterData[newNote] = [];
+          masterData[newNote].push(newRow);
+        }
+
+        closeRowEditModal();
+        renderTree();
+
+        // Refresh Table
+        const currentFilter = document.querySelector('#page3-inner .tree-item.active span');
+        if (currentFilter && currentFilter.innerText !== 'Part List' && masterData[currentFilter.innerText]) {
+          renderTable(masterData[currentFilter.innerText]);
+        } else {
+          renderTable(allData);
+        }
+
+        showToast('저장되었습니다.');
+      }
+
+      function closeRowEditModal() {
+        document.getElementById('p3-rowEditModal').classList.remove('show');
+      }
+
+      // --- Delete Rows ---
+      function deleteSelectedRows() {
+        if (selectedPNs.size === 0) return;
+        if (!confirm(`${selectedPNs.size}개 항목을 삭제하시겠습니까?`)) return;
+
+        selectedPNs.forEach((pn) => {
+          const idx = allData.findIndex((r) => r.pn === pn);
+          if (idx > -1) {
+            const row = allData[idx];
+            allData.splice(idx, 1);
+
+            // Remove from masterData
+            const noteList = masterData[row.note];
+            if (noteList) {
+              const noteIdx = noteList.indexOf(row);
+              if (noteIdx > -1) noteList.splice(noteIdx, 1);
+              if (noteList.length === 0) delete masterData[row.note];
+            }
+          }
+        });
+
+        selectedPNs.clear();
+        renderTree();
+        // Refresh Table
+        const currentFilter = document.querySelector('#page3-inner .tree-item.active span');
+        if (currentFilter && currentFilter.innerText !== 'Part List' && masterData[currentFilter.innerText]) {
+          renderTable(masterData[currentFilter.innerText]);
+        } else {
+          renderTable(allData);
+        }
+        showToast('삭제되었습니다.');
+      }
+
+      // --- Export DB ---
+      function exportDB() {
+        if (allData.length === 0) {
+          alert('내보낼 데이터가 없습니다.');
+          return;
+        }
+        const ws = XLSX.utils.json_to_sheet(
+          allData.map((r) => ({
+            'Part Number': r.pn,
+            Description: r.desc,
+            Note: r.note,
+          })),
+        );
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Parts');
+        XLSX.writeFile(wb, 'Parts_DB_Export.xlsx');
+      }
+
+      // --- Toast ---
+      function showToast(msg) {
+        const t = document.getElementById('p3-toast');
+        t.innerText = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
+      }
+    
+</script>
+
+<!-- PAGE 4 SCRIPT -->
+<script>
+
+    let systemData = [];
+    let trackingData = [];
+
+    // 파일 로드 이벤트
+    document.getElementById('p4-systemFile').addEventListener('change', (e) => handleFile(e, 'system'));
+    document.getElementById('p4-trackingFile').addEventListener('change', (e) => handleFile(e, 'tracking'));
+    document.getElementById('p4-searchInput').addEventListener('input', filterTable);
+
+    function handleFile(e, type) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const data = evt.target.result;
+            const workbook = XLSX.read(data, {type: 'binary'});
+            const sheetName = workbook.SheetNames[0];
+            const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+            
+            if(type === 'system') systemData = json;
+            else trackingData = json;
+
+            if(systemData.length > 0) compareAndDisplay();
+        };
+        reader.readAsBinaryString(file);
+    }
+
+    function compareAndDisplay() {
+        const tbody = document.getElementById('p4-tableBody');
+        tbody.innerHTML = '';
+        
+        let matchedCount = 0;
+
+        systemData.forEach(sysRow => {
+            // SO Number와 PN 추출 (포맷 정규화)
+            const sysSO = String(sysRow['SO Number'] || sysRow['SO#'] || '').split('.')[0].trim();
+            const sysPN = String(sysRow['Part Number'] || sysRow['PN#'] || '').trim();
+
+            // Tracking 데이터에서 찾기
+            const isReturned = trackingData.some(trRow => {
+                const trSO = String(trRow['SO#'] || trRow['SO Number'] || '').trim();
+                const trPN = String(trRow['PN#'] || trRow['Part Number'] || '').trim();
+                return sysSO === trSO && sysPN === trPN;
+            });
+
+            if(isReturned) matchedCount++;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><span class="status-badge ${isReturned ? 'status-done' : 'status-pending'}">
+                    ${isReturned ? '반납 확인' : '미확인'}
+                </span></td>
+                <td>${sysSO}</td>
+                <td>${sysPN}</td>
+                <td>${sysRow['Part Description'] || sysRow['Part Desc'] || '-'}</td>
+                <td>${sysRow['SO Ship To Party '] || sysRow['Customer'] || '-'}</td>
+                <td>${sysRow['Aging Days'] || '-'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // 대시보드 업데이트
+        document.getElementById('p4-statTotal').innerText = systemData.length;
+        document.getElementById('p4-statMatched').innerText = matchedCount;
+        document.getElementById('p4-statPending').innerText = systemData.length - matchedCount;
+    }
+
+    function filterTable() {
+        const query = document.getElementById('p4-searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('#p4-tableBody tr');
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(query) ? '' : 'none';
+        });
+    }
+
+</script>
+</body>
+</html>
