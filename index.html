@@ -280,6 +280,26 @@
         /* Show mobile toggle buttons */
         .mobile-toggle-btn { display: flex !important; }
 
+        /* PAGE 2 — sidebar collapsible on mobile */
+        #p2-outer {
+            flex-direction: column !important;
+            overflow-y: auto !important;
+        }
+        #p2-outer .sidebar {
+            width: 100% !important;
+            border-right: none !important;
+            border-bottom: 1px solid #ddd;
+            max-height: 0 !important;
+            overflow: hidden !important;
+            transition: max-height 0.4s ease;
+            flex-shrink: 0;
+        }
+        #p2-outer .sidebar.mob-open { max-height: 500px !important; }
+        #p2-outer .sidebar-header { display: none !important; }
+        #p2-outer .main-content { padding: 16px !important; overflow-y: auto !important; }
+        #p2-outer .calc-container { max-width: 100% !important; }
+        #p2-outer .result-board { grid-template-columns: 1fr !important; gap: 10px !important; }
+
         /* PAGE 3 — sidebar hidden by default, toggled open */
         #p3-outer {
             flex-direction: column !important;
@@ -387,6 +407,7 @@
         --fail-color: #e74c3c;
       }
 
+#p2-outer { display:flex; height:100%; background:#f4f7f9; position:relative; }
 #p2-outer * { box-sizing: border-box; }
 #p2-outer body {
         font-family: 'Segoe UI', Arial, sans-serif;
@@ -397,7 +418,7 @@
       /* Sidebar */
 #p2-outer .sidebar {
         width: var(--sidebar-width); background-color: white;
-        border-right: 1px solid #ddd; display: flex; flex-direction: column;
+        border-right: 1px solid #ddd; display: flex; flex-direction: column; flex-shrink: 0;
       }
 #p2-outer .sidebar-header {
         padding: 20px; background-color: var(--primary-color);
@@ -1872,8 +1893,12 @@
 
         <!-- PAGE 2: AGILENT SERVICE PORTAL -->
         <div id="sub-page-2" class="sub-page">
-            <div id="p2-outer" style="display:flex; height:100%; overflow:hidden; background:#f4f7f9;">
-<div class="sidebar">
+            <div id="p2-outer">
+<!-- Mobile Toggle: Sidebar -->
+<button class="mobile-toggle-btn" id="p2-sidebarToggle" onclick="toggleP2Sidebar()">
+  ☰ Data Integrity Tools — 메뉴 <span class="toggle-arrow">▼</span>
+</button>
+<div class="sidebar" id="p2-sidebarPanel">
       <div class="sidebar-header">Data Integrity Tools</div>
       <div class="menu-section">
         <div class="menu-item active" onclick="p2SwitchMode('Area')">📊 Area RSD%</div>
@@ -5600,6 +5625,12 @@ function goPortalHome() {
 }
 
 /* ---- Mobile toggle helpers ---- */
+function toggleP2Sidebar() {
+    var panel = document.getElementById('p2-sidebarPanel');
+    var btn = document.getElementById('p2-sidebarToggle');
+    panel.classList.toggle('mob-open');
+    btn.classList.toggle('open');
+}
 function toggleP3Sidebar() {
     var panel = document.getElementById('p3-sidebarPanel');
     var btn = document.getElementById('p3-sidebarToggle');
