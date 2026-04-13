@@ -5602,6 +5602,13 @@
 <!-- PORTAL NAV SCRIPT -->
 <script>
 function openSubPage(num) {
+    // 현재 활성 페이지 번호 파악 후 초기화
+    var currentActive = document.querySelector('.sub-page.active');
+    if (currentActive) {
+        var currentNum = parseInt(currentActive.id.replace('sub-page-', ''));
+        resetPage(currentNum);
+    }
+
     document.getElementById('page-home').style.display = 'none';
     document.querySelectorAll('.sub-page').forEach(function(p){ p.classList.remove('active'); });
     var t = document.getElementById('sub-page-' + num);
@@ -5618,10 +5625,141 @@ function openSubPage(num) {
     };
     document.getElementById('portal-breadcrumb').innerText = titles[num] || '';
 }
+
 function goPortalHome() {
+    // 현재 활성 페이지 초기화
+    var currentActive = document.querySelector('.sub-page.active');
+    if (currentActive) {
+        var currentNum = parseInt(currentActive.id.replace('sub-page-', ''));
+        resetPage(currentNum);
+    }
     document.querySelectorAll('.sub-page').forEach(function(p){ p.classList.remove('active'); });
     document.getElementById('page-home').style.display = '';
     document.getElementById('portal-breadcrumb').innerText = 'Home';
+}
+
+/* ---- 페이지별 초기화 ---- */
+function resetPage(num) {
+    if (num === 2) { resetPage2(); }
+    else if (num === 3) { resetPage3(); }
+    else if (num === 4) { resetPage4(); }
+    else if (num === 5 || num === 6 || num === 7) { resetDocPage(num); }
+    else if (num === 8) { resetPage8(); }
+    // 모바일 사이드바/카트 패널 닫기
+    ['p2-sidebarPanel','p3-sidebarPanel','p3-cartPanel'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('mob-open');
+    });
+    ['p2-sidebarToggle','p3-sidebarToggle','p3-cartToggle'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('open');
+    });
+}
+
+function resetPage2() {
+    // RSD 계산기 초기화 — 기존 p2ClearAllData 재사용 + 모드 초기화
+    if (typeof window.p2ClearAllData === 'function') window.p2ClearAllData();
+    if (typeof window.p2SwitchMode === 'function') window.p2SwitchMode('Area');
+}
+
+function resetPage3() {
+    // 검색어 초기화
+    var searchInput = document.getElementById('p3-searchInput');
+    if (searchInput) searchInput.value = '';
+    // 카트 초기화
+    if (typeof cart !== 'undefined') {
+        cart = {};
+        if (typeof updateCartUI === 'function') updateCartUI();
+    }
+    // 선택 항목 초기화
+    if (typeof selectedPNs !== 'undefined') {
+        selectedPNs.clear();
+        if (typeof updateToolbarState === 'function') updateToolbarState();
+    }
+    // 고객 정보 폼 초기화
+    ['p3-custCompany','p3-custName','p3-custPhone','p3-custSerial','p3-custSymptom','p3-custNote'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    var optCheck = document.getElementById('p3-optionCheck');
+    if (optCheck) {
+        optCheck.checked = false;
+        var form = document.getElementById('p3-customerForm');
+        if (form) form.classList.remove('show');
+    }
+    // 스크롤 상단으로
+    var area = document.getElementById('p3-contentArea');
+    if (area) area.scrollTop = 0;
+}
+
+function resetPage4() {
+    // 업로드 데이터 초기화
+    if (typeof systemData !== 'undefined') systemData = [];
+    if (typeof trackingData !== 'undefined') trackingData = [];
+    // 테이블 초기화
+    var tbody = document.getElementById('p4-tableBody');
+    if (tbody) tbody.innerHTML = '';
+    // 통계 초기화
+    ['p4-statTotal','p4-statMatched','p4-statPending'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.innerText = '0';
+    });
+    // 검색어 초기화
+    var search = document.getElementById('p4-searchInput');
+    if (search) search.value = '';
+    // 파일 인풋 초기화
+    ['p4-systemFile','p4-trackingFile'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+}
+
+function resetDocPage(num) {
+    // 5, 6, 7번 문서 페이지 — 접혀있는 섹션 모두 펼치기 + 스크롤 상단
+    var page = document.getElementById('sub-page-' + num);
+    if (!page) return;
+    page.querySelectorAll('.doc-section-body').forEach(function(body) {
+        body.classList.remove('collapsed');
+        body.style.maxHeight = '9999px';
+    });
+    page.querySelectorAll('.doc-section-header').forEach(function(h) {
+        h.classList.remove('collapsed');
+    });
+    var wrap = page.querySelector('.doc-page-wrap');
+    if (wrap) wrap.scrollTop = 0;
+}
+
+function resetPage8() {
+    // GC/LC/MS 점검표 — 체크박스 전체 해제 + 스크롤 상단
+    var page = document.getElementById('sub-page-8');
+    if (!page) return;
+    page.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(function(el) {
+        el.checked = false;
+        // btn-status active 클래스도 제거
+        var tr = el.closest('tr');
+        if (tr) tr.classList.remove('row-ng', 'row-ok');
+    });
+    // btn-status 버튼 active 클래스 제거
+    page.querySelectorAll('.btn-status').forEach(function(btn) {
+        btn.classList.remove('active');
+    });
+    // remarks-input 초기화
+    page.querySelectorAll('.remarks-input').forEach(function(el) {
+        el.value = '';
+    });
+    // 진행률 바 초기화 — GC 내부 업데이트 함수 호출 시도
+    if (typeof updateOverallProgress === 'function') updateOverallProgress();
+    page.querySelectorAll('[id$="-bar"]').forEach(function(bar) {
+        bar.style.width = '0%';
+    });
+    page.querySelectorAll('[id$="-percent"]').forEach(function(el) {
+        el.innerText = '0%';
+    });
+    page.querySelectorAll('[id$="-count"]').forEach(function(el) {
+        if (!el.id.includes('total')) el.innerText = '0';
+    });
+    var scroll = document.getElementById('p8-scroll');
+    if (scroll) scroll.scrollTop = 0;
 }
 
 /* ---- Mobile toggle helpers ---- */
